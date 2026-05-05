@@ -1,6 +1,6 @@
 package model;
 
-public class Carta{
+public class Carta {
     final  int numero;
     final int colore;
     public Carta(int numero, int colore){

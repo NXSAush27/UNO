@@ -1,20 +1,18 @@
 package model;
-
 import java.util.ArrayList;
-import java.util.List;
 
 public class Mano {
-    private List<Carta> carte;
-
-    public Mano() {
+    private ArrayList<Carta> carte;
+    public Mano(){
         this.carte = new ArrayList<>();
     }
-
-    public void addCarta(Carta c) {
-        carte.add(c);
+    public void aggiungiCarta(Carta carta){
+        this.carte.add(carta);
     }
-
-    public List<Carta> getCarte() {
+    public void rimuoviCartaAPosizione(int posizione){
+        this.carte.remove(posizione);
+    }
+    public ArrayList<Carta> getCarte() {
         return carte;
     }
 }
