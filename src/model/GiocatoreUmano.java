@@ -1,23 +1,24 @@
 package model;
 
-public class GiocatoreUmano implements Giocatore {
-    private Mano mano;
+public class GiocatoreUmano extends Giocatore {
     private String nome;
     public GiocatoreUmano(String nome){
-        this.mano = new Mano();
+        super();
         this.nome = nome;
     }
     @Override
     public Mano getMano() {
-        return mano;
+        return super.getMano();
     }
     @Override
     public void aggiungiCarta(Carta carta) {
-        this.mano.aggiungiCarta(carta);
+        super.aggiungiCarta(carta);
     }
     @Override
-    public void rimuoviCarta(Carta carta) {
-        this.mano.getCarte().remove(carta);
+    public void rimuoviCartaAPosizione(int posizione) {
+        super.rimuoviCartaAPosizione(posizione);
     }
-    
+    public String getNome() {
+        return nome;
+    }
 }

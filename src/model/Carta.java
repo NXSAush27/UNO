@@ -1,16 +1,23 @@
 package model;
 
-public class Carta {
-    final  int numero;
-    final int colore;
-    public Carta(int numero, int colore){
+import java.io.Serializable;
+
+public class Carta implements Serializable{
+    final  int numero; // 0-9 per carte normali, -1 per jolly e +4
+    final int colore; // 0 = rosso, 1 = verde, 2 = blu, 3 = giallo, 4 = jolly
+    int tipo; // 0 = normale, 1 = +2, 2 = inverti, 3 = salta, 4 = jolly, 5 = +4
+    public Carta(int numero, int colore, int tipo){
         this.numero = numero;
         this.colore = colore;
+        this.tipo = tipo;
     }
     public int getNumero() {
         return numero;
     }
     public int getColore() {
         return colore;
+    }
+    public int getTipo() {
+        return tipo;
     }
 }
