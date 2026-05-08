@@ -20,4 +20,12 @@ public class Carta implements Serializable{
     public int getTipo() {
         return tipo;
     }
+    public String toString() {
+        String[] colori = {"Rosso", "Verde", "Blu", "Giallo", "Jolly"};
+        String[] tipi = {"Normale", "+2", "Inverti", "Salta", "Jolly", "+4"};
+        if (tipo == 4 || tipo == 5) {
+            return tipi[tipo] + " (" + colori[colore] + ")";
+        }
+        return tipi[tipo] + " " + numero + " (" + colori[colore] + ")";
+    }
 }

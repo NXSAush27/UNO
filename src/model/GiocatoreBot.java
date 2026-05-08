@@ -21,4 +21,9 @@ public class GiocatoreBot extends Giocatore {
     public String getNome() {
         return nome;
     }
+    @Override
+    public int decidiMossa() {
+        // Implementazione per il giocatore bot
+        return 0;
+    }
 }

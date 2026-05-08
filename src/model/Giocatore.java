@@ -3,6 +3,7 @@ package model;
 public abstract class Giocatore {
     private Mano mano;
     private boolean DettoUno;
+    private boolean haGiocato = false;
     public Giocatore() {
         this.mano = new Mano();
         this.DettoUno = false;
@@ -10,6 +11,14 @@ public abstract class Giocatore {
 
     public Mano getMano() {
         return mano;
+    }
+
+    public boolean HaGiocato() {
+        return haGiocato;
+    }
+
+    public void setHaGiocato(boolean haGiocato) {
+        this.haGiocato = haGiocato;
     }
 
     public boolean isDettoUno() {
@@ -27,4 +36,5 @@ public abstract class Giocatore {
     public void rimuoviCartaAPosizione(int posizione) {
         mano.rimuoviCartaAPosizione(posizione);
     }
+    public abstract int decidiMossa();
 }
