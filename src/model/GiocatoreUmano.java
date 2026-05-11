@@ -1,6 +1,10 @@
 package model;
 
-public class GiocatoreUmano extends Giocatore {
+import java.io.Serializable;
+
+import utils.App;
+public class GiocatoreUmano extends Giocatore implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String nome;
     public GiocatoreUmano(String nome){
         super();
@@ -11,6 +15,14 @@ public class GiocatoreUmano extends Giocatore {
         return super.getMano();
     }
     @Override
+    public void setHaSaltato(boolean haSaltato) {
+        super.setHaSaltato(haSaltato);
+    }
+    @Override
+    public boolean getHaSaltato() {
+        return super.getHaSaltato();
+    }
+    @Override
     public void aggiungiCarta(Carta carta) {
         super.aggiungiCarta(carta);
     }
@@ -18,6 +30,7 @@ public class GiocatoreUmano extends Giocatore {
     public void rimuoviCartaAPosizione(int posizione) {
         super.rimuoviCartaAPosizione(posizione);
     }
+    @Override
     public String getNome() {
         return nome;
     }
@@ -30,14 +43,15 @@ public class GiocatoreUmano extends Giocatore {
             }
             System.out.println("Digita 0 per giocare una carta, 1 per pescare una carta, 2 per passare.");
             try {
-                int scelta = System.in.read() - '0'; // Converti il carattere in un numero
+                String input = App.scanner.nextLine().trim();
+                int scelta = Integer.parseInt(input);
                 if (scelta < 0 || scelta > 2) {
                     System.out.println("Scelta non valida, riprova.");
                     continue;
                 }
                 return scelta;
-            } catch (Exception e) {
-                System.out.println("Input non valido, riprova.");
+            } catch (NumberFormatException e) {
+                System.out.println("Scelta non valida, riprova.");
             }
         }
     }

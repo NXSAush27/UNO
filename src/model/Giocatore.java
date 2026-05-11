@@ -1,9 +1,13 @@
 package model;
 
-public abstract class Giocatore {
+import java.io.Serializable;
+
+public abstract class Giocatore implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Mano mano;
     private boolean DettoUno;
     private boolean haGiocato = false;
+    private boolean haSaltato = false;
     public Giocatore() {
         this.mano = new Mano();
         this.DettoUno = false;
@@ -20,7 +24,9 @@ public abstract class Giocatore {
     public void setHaGiocato(boolean haGiocato) {
         this.haGiocato = haGiocato;
     }
-
+    public String getNome(){
+        return "";
+    }
     public boolean isDettoUno() {
         return DettoUno;
     }
@@ -35,6 +41,15 @@ public abstract class Giocatore {
 
     public void rimuoviCartaAPosizione(int posizione) {
         mano.rimuoviCartaAPosizione(posizione);
+    }
+    public boolean isHaSaltato() {
+        return haSaltato;
+    }
+    public void setHaSaltato(boolean haSaltato) {
+        this.haSaltato = haSaltato;
+    }
+    public boolean getHaSaltato() {
+        return haSaltato;
     }
     public abstract int decidiMossa();
 }

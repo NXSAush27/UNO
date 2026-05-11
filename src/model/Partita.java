@@ -1,7 +1,14 @@
 package model;
+import java.io.Serializable;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
+import java.io.IOException;
 import java.util.Stack;
-
-public class Partita {
+import utils.App;
+public class Partita implements Serializable {
+    private static final long serialVersionUID = 1L;
     Giocatore[] giocatori;
     Mazzo mazzo;
     Stack<Carta> pilascarti;
@@ -14,6 +21,57 @@ public class Partita {
         this.pilascarti = new Stack<>();
         this.cartaInGioco = null;
         this.direzioneGioco = true;
+        this.turno = 0;
+        for(int i = 0; i<10;i++){
+            this.mazzo.mescola();
+        }
+    }
+
+    public void salvaPartita(String filePath) {
+        try (FileOutputStream fos = new FileOutputStream(filePath);
+             ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(mazzo);
+            oos.writeObject(pilascarti);
+            oos.writeObject(cartaInGioco);
+            oos.writeBoolean(direzioneGioco);
+            oos.writeInt(turno);
+            oos.writeInt(giocatori.length);
+            for (Giocatore g : giocatori) {
+                oos.writeObject(g);
+            }
+            System.out.println("Partita salvata con successo!");
+        } catch (IOException e) {
+            System.out.println("Errore durante il salvataggio: " + e.getMessage());
+        }
+    }
+
+    public void salvaPartita() {
+        salvaPartita("savegame.dat");
+    }
+
+    public Partita caricaPartita(String filePath) {
+        try (FileInputStream fis = new FileInputStream(filePath);
+             ObjectInputStream ois = new ObjectInputStream(fis)) {
+            this.mazzo = (Mazzo) ois.readObject();
+            this.pilascarti = (Stack<Carta>) ois.readObject();
+            this.cartaInGioco = (Carta) ois.readObject();
+            this.direzioneGioco = ois.readBoolean();
+            this.turno = ois.readInt();
+            int numGiocatori = ois.readInt();
+            this.giocatori = new Giocatore[numGiocatori];
+            for (int i = 0; i < numGiocatori; i++) {
+                this.giocatori[i] = (Giocatore) ois.readObject();
+            }
+            System.out.println("Partita caricata con successo!");
+            return this;
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Errore durante il caricamento: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public Partita caricaPartita() {
+        return caricaPartita("savegame.dat");
     }
     public Giocatore[] getGiocatori() {
         return giocatori;
@@ -51,7 +109,7 @@ public class Partita {
         }
     }
     public void pescaCarta(Giocatore giocatore) {
-        if (!mazzo.getCarte()[0].equals(null)) {
+        if (mazzo.getCarte()[0] != null) {
             Carta cartaPescata = mazzo.getCarte()[0];
             giocatore.aggiungiCarta(cartaPescata);
             // Rimuovi la carta pescata dal mazzo
@@ -60,18 +118,18 @@ public class Partita {
             mazzo = nuoveCarte;
         }
     }
-    public void passaTurno() {
-        //TODO: Logica per passare il turno al giocatore successivo in base alla direzione del gioco
+    public void passaTurno(Giocatore giocatore) {
+        giocatore.setHaGiocato(true);
     }
     public void applicaEffettoCarta(Carta carta) {
         switch (carta.getTipo()) {
-            case 1: // +2
-                if (direzioneGioco) {
-                    // Il giocatore successivo pesca 2 carte e salta il turno
-                    for (int i = 0; i < 2; i++) {
-                        pescaCarta(giocatori[turno + 1 % giocatori.length]);
-                    }
-                } else {
+case 1: // +2
+                 if (direzioneGioco) {
+                     // Il giocatore successivo pesca 2 carte e salta il turno
+                     for (int i = 0; i < 2; i++) {
+                         pescaCarta(giocatori[(turno + 1) % giocatori.length]);
+                     }
+                 } else {
                     // Il giocatore precedente pesca 2 carte e salta il turno
                     for (int i = 0; i < 2; i++) {
                         pescaCarta(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]);
@@ -82,10 +140,10 @@ public class Partita {
                 // Cambia la direzione del gioco
                 direzioneGioco = !direzioneGioco;
                 break;
-            case 3: // Salta
-                // Il giocatore successivo salta il turno
-                if (direzioneGioco) {
-                    PassaTurno(giocatori[turno + 1 % giocatori.length]);
+case 3: // Salta
+                 // Il giocatore successivo salta il turno
+                 if (direzioneGioco) {
+                     PassaTurno(giocatori[(turno + 1) % giocatori.length]);
                 } else {
                     PassaTurno(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]); // Ternary operator per gestire il wrap-around dell'indice del giocatore precedente
                 }
@@ -97,14 +155,14 @@ public class Partita {
                 while(true){
                     System.out.println("Scegli il colore da giocare: 0 = Rosso, 1 = Verde, 2 = Blu, 3 = Giallo");
                     try {
-                        int coloreScelto = System.in.read() - '0'; // Converti il carattere letto in un numero
+                        int coloreScelto = Integer.parseInt(App.scanner.nextLine().trim());
                         if (coloreScelto >= 0 && coloreScelto <= 3) {
                             cartacoloreScelto = new Carta(0, coloreScelto, 4);
                             break;
                         } else {
                             System.out.println("Colore non valido, riprova.");
                         }
-                    } catch (Exception e) {
+                    } catch (NumberFormatException e) {
                         System.out.println("Input non valido, riprova.");
                     }
                 }
@@ -114,28 +172,29 @@ public class Partita {
                 // Il giocatore successivo pesca 4 carte, salta il turno e il giocatore sceglie il colore da giocare
                 if (direzioneGioco) {
                     for (int i = 0; i < 4; i++) {
-                        pescaCarta(giocatori[turno + 1 % giocatori.length]);
+                        pescaCarta(giocatori[(turno + 1) % giocatori.length]);
                     }
-                    PassaTurno(giocatori[turno + 1 % giocatori.length]);
+                    PassaTurno(giocatori[(turno + 1) % giocatori.length]);
                 } else {
+                    int prevIndex = turno - 1 < 0 ? giocatori.length - 1 : turno - 1;
                     for (int i = 0; i < 4; i++) {
-                        pescaCarta(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]);
+                        pescaCarta(giocatori[prevIndex]);
                     }
-                    PassaTurno(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]);
+                    PassaTurno(giocatori[prevIndex]);
                 }
-                                pilascarti.pop();
+                pilascarti.pop();
                 Carta cartacoloreScelto4 = new Carta(0, 0, 4); // Placeholder per la carta jolly con colore scelto
                 while(true){
                     System.out.println("Scegli il colore da giocare: 0 = Rosso, 1 = Verde, 2 = Blu, 3 = Giallo");
                     try {
-                        int coloreScelto = System.in.read() - '0'; // Converti il carattere letto in un numero
+                        int coloreScelto = Integer.parseInt(App.scanner.nextLine().trim());
                         if (coloreScelto >= 0 && coloreScelto <= 3) {
                             cartacoloreScelto4 = new Carta(0, coloreScelto, 4);
                             break;
                         } else {
                             System.out.println("Colore non valido, riprova.");
                         }
-                    } catch (Exception e) {
+                    } catch (NumberFormatException e) {
                         System.out.println("Input non valido, riprova.");
                     }
                 }
@@ -158,21 +217,16 @@ public class Partita {
         // Rimuovi la prima carta dal mazzo
         Carta[] nuoveCarte = new Carta[mazzo.getCarte().length - 1];
         System.arraycopy(mazzo.getCarte(), 1, nuoveCarte, 0, nuoveCarte.length);
-        mazzo = new Mazzo(112);
-        mazzo.getCarte()[0] = null; // Rimuovi la prima carta
+        mazzo.getCarte()[0] = null; // Rimuovi la prima carta dal mazzo
         System.arraycopy(nuoveCarte, 0, mazzo.getCarte(), 0, nuoveCarte.length);
+        // Inizia il ciclo di gioco
+        CicloGioco();
     }
-    public void terminaPartita() {
-        //TODO: Logica per terminare la partita, ad esempio dichiarare il vincitore
+    public void terminaPartita(Giocatore giocatore) {
+        System.out.println("Il giocatore:"+giocatore.getNome()+ " ha vinto!!");
     }
     public boolean verificaMossaValida(Carta cartaGiocata) {
         return cartaInGioco == null || cartaGiocata.getColore() == cartaInGioco.getColore() || cartaGiocata.getNumero() == cartaInGioco.getNumero() || cartaGiocata.getTipo() == 4 || cartaGiocata.getTipo() == 5;
-    }
-    public void salvaPartita() {
-        //TODO: Logica per salvare la partita con serializzazione e json
-    }
-    public void caricaPartita() {
-        //TODO: Logica per caricare la partita da un file di salvataggio
     }
     public void SegnalaUno(Giocatore giocatore) {
         if (giocatore.getMano().getCarte().size() == 1) {
@@ -190,22 +244,59 @@ public class Partita {
         this.mazzo = nuoveCarte;
     }
     public void gestisciTurno(Giocatore giocatore) {
-        //TODO: Logica per gestire il turno di un giocatore
         if (giocatore.getMano().getCarte().isEmpty()) {
             return; // Il giocatore ha già vinto, salta il turno
         }
+        if (giocatore.isHaSaltato()) {
+            System.out.println("Il giocatore " + giocatore.getNome() + " salta il turno!");
+            giocatore.setHaSaltato(false);
+            return;
+        }
+        giocatore.setHaGiocato(false);
         // Logica per decidere se il giocatore gioca una carta, pesca o passa
-        
+        System.out.println("Turno di " + giocatore.getNome());
+        System.out.println("Carta in gioco: " + cartaInGioco);
         while (!giocatore.HaGiocato()) {
             switch(giocatore.decidiMossa()) {
                 case 0: // Gioca una carta
+                // Mostra le carte giocabili e chiedi quale giocare
+                System.out.println("Carte giocabili:");
+                int giocabiliCount = 0;
                 for (int i = 0; i < giocatore.getMano().getCarte().size(); i++) {
                     if (verificaMossaValida(giocatore.getMano().getCarte().get(i))) {
-                        giocaCarta(giocatore, i);
-                    applicaEffettoCarta(cartaInGioco);
+                        System.out.println(giocabiliCount + ": " + giocatore.getMano().getCarte().get(i).toString());
+                        giocabiliCount++;
+                    }
+                }
+                if (giocabiliCount == 0) {
+                    System.out.println("Nessuna carta giocabile. Peschi una carta.");
+                    pescaCarta(giocatore);
                     giocatore.setHaGiocato(true);
                     break;
+                }
+                System.out.println("Digita il numero della carta da giocare:");
+                try {
+                    int sceltaCarta = Integer.parseInt(App.scanner.nextLine().trim());
+                    if (sceltaCarta < 0 || sceltaCarta >= giocabiliCount) {
+                        System.out.println("Scelta non valida, riprova.");
+                        break;
                     }
+                    // Trova l'indice reale della carta giocabile selezionata
+                    int indiceReale = 0;
+                    int contatore = 0;
+                    for (int i = 0; i < giocatore.getMano().getCarte().size(); i++) {
+                        if (verificaMossaValida(giocatore.getMano().getCarte().get(i))) {
+                            if (contatore == sceltaCarta) {
+                                indiceReale = i;
+                                break;
+                            }
+                            contatore++;
+                        }
+                    }
+                    giocaCarta(giocatore, indiceReale);
+                    giocatore.setHaGiocato(true);
+                } catch (NumberFormatException e) {
+                    System.out.println("Input non valido, riprova.");
                 }
                 break;
                 case 1: // Pesca una carta
@@ -214,6 +305,11 @@ public class Partita {
                     break;
                 case 2: // Passa
                     PassaTurno(giocatore);
+                    break;
+                case 3: // Segnala UNO
+                    giocaCarta(giocatore, turno);
+                    SegnalaUno(giocatore);
+                    giocatore.setHaGiocato(true);
                     break;
             }
         }
@@ -227,21 +323,21 @@ public class Partita {
         while (true) {
             if (direzioneGioco) {
                 for (int i = 0; i < giocatori.length; i++) {
-                    gestisciTurno(giocatori[i]);
-                    if (verificaVittoria(giocatori[i])) {
-                        terminaPartita();
+                    turno = (turno + 1) % giocatori.length;
+                    gestisciTurno(giocatori[turno]);
+                    if (verificaVittoria(giocatori[turno])) {
+                        terminaPartita(giocatori[turno]);
                         return;
                     }
-                    turno++;
                 }
             } else {
                 for (int i = giocatori.length - 1; i >= 0; i--) {
-                    gestisciTurno(giocatori[i]);
-                    if (verificaVittoria(giocatori[i])) {
-                        terminaPartita();
+                    turno = (turno - 1 + giocatori.length) % giocatori.length;
+                    gestisciTurno(giocatori[turno]);
+                    if (verificaVittoria(giocatori[turno])) {
+                        terminaPartita(giocatori[turno]);
                         return;
                     }
-                    turno++;
                 }
             }
         }

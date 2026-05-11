@@ -1,6 +1,9 @@
 package model;
 
-public class Mazzo {
+import java.io.Serializable;
+
+public class Mazzo implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Carta[] carte;
     public Mazzo(int size){
         this.carte = new Carta[size];
