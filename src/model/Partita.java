@@ -123,7 +123,6 @@ public class Partita implements Serializable {
     public void applicaEffettoCarta(Carta carta) {
         switch (carta.getTipo()) {
             case 1: // +2
-            	System.out.println("peschi 2 carte! ");
                 if (direzioneGioco) {
                      // Il giocatore successivo pesca 2 carte e salta il turno
                     for (int i = 0; i < 2; i++) {
