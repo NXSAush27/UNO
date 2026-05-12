@@ -1,33 +1,38 @@
 package model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class Mazzo implements Serializable {
     private static final long serialVersionUID = 1L;
-    private Carta[] carte;
+    private ArrayList<Carta> carte;
     public Mazzo(int size){
-        this.carte = new Carta[size];
-        for (int i = 0; i < size; i++) {
-            int numero = i % 10; // 0-9 per carte normali
-            int colore = (i / 10) % 5; // 0-4 per i colori (incluso jolly)
-            int tipo;
-            if (colore == 4) { // Jolly
-                tipo = (i / 50) + 4; // 4 per jolly, 5 per +4
-            } else {
-                tipo = (i / 20) % 6; // 0-5 per tipi di carte normali
+        this.carte = new ArrayList<>();
+        for(int i= 0; i<4; i++){
+            carte.add(new Carta(0, i, 0));
+            for(int j = 1; j<=9; j++){
+                carte.add(new Carta(j, i, 0));
+                carte.add(new Carta(j, i, 0));
             }
-            carte[i] = new Carta(numero, colore, tipo);
+            for(int j = 0; j<2; j++){
+                carte.add(new Carta(-1, i, 1)); // +2
+                carte.add(new Carta(-1, i, 2)); // Inverti
+                carte.add(new Carta(-1, i, 3)); // Salta
+            }
+            carte.add(new Carta(-1, 4, 4)); // Jolly
+            carte.add(new Carta(-1, 4, 5)); // +4
         }
+
     }
     public void mescola() {
-        Carta[] nuoveCarte = new Carta[carte.length];
-        for (int i = 0; i < carte.length; i++) {
-            int indiceCasuale = (int) (Math.random() * carte.length);
-            nuoveCarte[i] = carte[indiceCasuale];
-        }        
-        this.carte = nuoveCarte;
+        for (int i = 0; i < carte.size(); i++) {
+            int indiceCasuale = (int) (Math.random() * carte.size());
+            Carta carta = carte.get(indiceCasuale);
+            carte.set(indiceCasuale, carte.get(i));
+            carte.set(i, carta);
+        }
     }
-    public Carta[] getCarte() {
+    public ArrayList<Carta> getCarte() {
         return carte;
     }
 }

@@ -19,9 +19,9 @@ public class App {
                 System.out.print("Scelta: ");
                 int scelta = leggiIntero();
                 if (scelta == 1) {
-                    System.out.println("Dimmi il numero di giocatori (2-8):");
+                    System.out.println("Dimmi il numero di giocatori (2-6):");
                     int numGiocatori = leggiIntero();
-                    if (numGiocatori < 2 || numGiocatori > 8) {
+                    if (numGiocatori < 2 || numGiocatori > 6) {
                         System.out.println("Numero di giocatori non valido, riprova.");
                         continue;
                     }
@@ -61,7 +61,7 @@ public class App {
                         System.out.println("Partita caricata! Vuoi continuare a giocare? (s/n)");
                         String risposta = scanner.nextLine().trim().toLowerCase();
                         if (risposta.equals("s")) {
-                            partita.iniziaPartita();
+                            partita.CicloGioco();
                         }
                     }
                 } else if (scelta == 4) {

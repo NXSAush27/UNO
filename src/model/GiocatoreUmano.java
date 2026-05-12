@@ -41,11 +41,11 @@ public class GiocatoreUmano extends Giocatore implements Serializable {
             for (int i = 0; i < getMano().getCarte().size(); i++) {
                 System.out.println(i + ": " + getMano().getCarte().get(i).toString());
             }
-            System.out.println("Digita 0 per giocare una carta, 1 per pescare una carta, 2 per passare.");
+            System.out.println("Digita 0 per giocare una carta, 1 per pescare una carta, 2 per passare, 3 per dire UNO, 4 per salvare la partita, 5 per caricare una partita");
             try {
                 String input = App.scanner.nextLine().trim();
                 int scelta = Integer.parseInt(input);
-                if (scelta < 0 || scelta > 2) {
+                if (scelta < 0 || scelta > 5) {
                     System.out.println("Scelta non valida, riprova.");
                     continue;
                 }

@@ -17,12 +17,12 @@ public class Partita implements Serializable {
     int turno; // Indice del giocatore attivo
     public Partita(Giocatore[] giocatori){
         this.giocatori = giocatori;
-        this.mazzo = new Mazzo(112);
+        this.mazzo = new Mazzo(108);
         this.pilascarti = new Stack<>();
         this.cartaInGioco = null;
         this.direzioneGioco = true;
         this.turno = 0;
-        for(int i = 0; i<10;i++){
+        for(int i = 0; i<Math.random() * 100;i++){
             this.mazzo.mescola();
         }
     }
@@ -109,13 +109,11 @@ public class Partita implements Serializable {
         }
     }
     public void pescaCarta(Giocatore giocatore) {
-        if (mazzo.getCarte()[0] != null) {
-            Carta cartaPescata = mazzo.getCarte()[0];
+        if (mazzo.getCarte().size() > 0) {
+            Carta cartaPescata = mazzo.getCarte().get(0);
             giocatore.aggiungiCarta(cartaPescata);
             // Rimuovi la carta pescata dal mazzo
-            Mazzo nuoveCarte = new Mazzo(mazzo.getCarte().length - 1);
-            System.arraycopy(mazzo.getCarte(), 1, nuoveCarte.getCarte(), 0, nuoveCarte.getCarte().length);
-            mazzo = nuoveCarte;
+            mazzo.getCarte().remove(0);
         }
     }
     public void passaTurno(Giocatore giocatore) {
@@ -123,13 +121,13 @@ public class Partita implements Serializable {
     }
     public void applicaEffettoCarta(Carta carta) {
         switch (carta.getTipo()) {
-case 1: // +2
-                 if (direzioneGioco) {
+            case 1: // +2
+                if (direzioneGioco) {
                      // Il giocatore successivo pesca 2 carte e salta il turno
-                     for (int i = 0; i < 2; i++) {
-                         pescaCarta(giocatori[(turno + 1) % giocatori.length]);
-                     }
-                 } else {
+                    for (int i = 0; i < 2; i++) {
+                        pescaCarta(giocatori[(turno + 1) % giocatori.length]);
+                    }
+                } else {
                     // Il giocatore precedente pesca 2 carte e salta il turno
                     for (int i = 0; i < 2; i++) {
                         pescaCarta(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]);
@@ -140,13 +138,84 @@ case 1: // +2
                 // Cambia la direzione del gioco
                 direzioneGioco = !direzioneGioco;
                 break;
-case 3: // Salta
+            case 3: // Salta
                  // Il giocatore successivo salta il turno
-                 if (direzioneGioco) {
-                     PassaTurno(giocatori[(turno + 1) % giocatori.length]);
+                if (direzioneGioco) {
+                    PassaTurno(giocatori[(turno + 1) % giocatori.length]);
                 } else {
                     PassaTurno(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]); // Ternary operator per gestire il wrap-around dell'indice del giocatore precedente
                 }
+                break;
+            case 4: // Jolly
+                // Il giocatore sceglie il colore da giocare
+                pilascarti.pop();
+                Carta cartacoloreScelto = new Carta(0, 0, 4); // Placeholder per la carta jolly con colore scelto
+                while(true){
+                    System.out.println("Scegli il colore da giocare: 0 = Rosso, 1 = Verde, 2 = Blu, 3 = Giallo");
+                    try {
+                        int coloreScelto = Integer.parseInt(App.scanner.nextLine().trim());
+                        if (coloreScelto >= 0 && coloreScelto <= 3) {
+                            cartacoloreScelto = new Carta(0, coloreScelto, 4);
+                            break;
+                        } else {
+                            System.out.println("Colore non valido, riprova.");
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Input non valido, riprova.");
+                    }
+                }
+                cartaInGioco = cartacoloreScelto;
+                break;
+            case 5: // +4
+                // Il giocatore successivo pesca 4 carte, salta il turno e il giocatore sceglie il colore da giocare
+                if (direzioneGioco) {
+                    for (int i = 0; i < 4; i++) {
+                        pescaCarta(giocatori[(turno + 1) % giocatori.length]);
+                    }
+                    PassaTurno(giocatori[(turno + 1) % giocatori.length]);
+                } else {
+                    int prevIndex = turno - 1 < 0 ? giocatori.length - 1 : turno - 1;
+                    for (int i = 0; i < 4; i++) {
+                        pescaCarta(giocatori[prevIndex]);
+                    }
+                    PassaTurno(giocatori[prevIndex]);
+                }
+                pilascarti.pop();
+                Carta cartacoloreScelto4 = new Carta(0, 0, 4); // Placeholder per la carta jolly con colore scelto
+                while(true){
+                    System.out.println("Scegli il colore da giocare: 0 = Rosso, 1 = Verde, 2 = Blu, 3 = Giallo");
+                    try {
+                        int coloreScelto = Integer.parseInt(App.scanner.nextLine().trim());
+                        if (coloreScelto >= 0 && coloreScelto <= 3) {
+                            cartacoloreScelto4 = new Carta(0, coloreScelto, 4);
+                            break;
+                        } else {
+                            System.out.println("Colore non valido, riprova.");
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Input non valido, riprova.");
+                    }
+                }
+                cartaInGioco = cartacoloreScelto4;
+                break;
+        }
+    }
+    public void applicaEffettoCartaInizio(Carta carta) {
+        switch (carta.getTipo()) {
+            case 1: // +2
+                     // Il giocatore successivo pesca 2 carte e salta il turno
+                    for (int i = 0; i < 2; i++) {
+                        pescaCarta(giocatori[(0) % giocatori.length]);
+                    }
+                break;
+            case 2: // Inverti
+                // Cambia la direzione del gioco
+                direzioneGioco = !direzioneGioco;
+                break;
+            case 3: // Salta
+                 // Il giocatore successivo salta il turno
+                    PassaTurno(giocatori[(0) % giocatori.length]);
+                    PassaTurno(giocatori[0]); 
                 break;
             case 4: // Jolly
                 // Il giocatore sceglie il colore da giocare
@@ -213,13 +282,11 @@ case 3: // Salta
             }
         }
         // Posiziona la prima carta sul tavolo
-        cartaInGioco = mazzo.getCarte()[0];
+        cartaInGioco = mazzo.getCarte().get(0);
         // Rimuovi la prima carta dal mazzo
-        Carta[] nuoveCarte = new Carta[mazzo.getCarte().length - 1];
-        System.arraycopy(mazzo.getCarte(), 1, nuoveCarte, 0, nuoveCarte.length);
-        mazzo.getCarte()[0] = null; // Rimuovi la prima carta dal mazzo
-        System.arraycopy(nuoveCarte, 0, mazzo.getCarte(), 0, nuoveCarte.length);
+        mazzo.getCarte().remove(0);
         // Inizia il ciclo di gioco
+        //applicaEffettoCartaInizio(cartaInGioco);
         CicloGioco();
     }
     public void terminaPartita(Giocatore giocatore) {
@@ -237,11 +304,9 @@ case 3: // Salta
         }
     }
     public void penalizzaGiocatore(Giocatore giocatore) {
-        giocatore.aggiungiCarta(mazzo.getCarte()[0]);
+        giocatore.aggiungiCarta(mazzo.getCarte().get(0));
         // Rimuovi la carta pescata dal mazzo
-        Mazzo nuoveCarte = new Mazzo(mazzo.getCarte().length - 1);
-        System.arraycopy(mazzo.getCarte(), 1, nuoveCarte.getCarte(), 0, nuoveCarte.getCarte().length);
-        this.mazzo = nuoveCarte;
+        mazzo.getCarte().remove(0);
     }
     public void gestisciTurno(Giocatore giocatore) {
         if (giocatore.getMano().getCarte().isEmpty()) {
@@ -311,6 +376,16 @@ case 3: // Salta
                     SegnalaUno(giocatore);
                     giocatore.setHaGiocato(true);
                     break;
+                case 4: // Salva partita
+                    salvaPartita();
+                    break;
+                case 5: // Carica partita
+                    Partita partitaCaricata = caricaPartita();
+                    if (partitaCaricata != null) {
+                        partitaCaricata.CicloGioco();
+                        return; // Termina il turno corrente dopo aver caricato la partita
+                    }
+                    break;
             }
         }
     }
@@ -321,23 +396,30 @@ case 3: // Salta
 
     public void CicloGioco() {
         while (true) {
+            boolean prevDirezione = direzioneGioco;
             if (direzioneGioco) {
-                for (int i = 0; i < giocatori.length; i++) {
-                    turno = (turno + 1) % giocatori.length;
+                for (int i = turno; i < giocatori.length; i++) {
+                    if(prevDirezione != direzioneGioco) {
+                        break; // Se la direzione è cambiata durante il ciclo, interrompi e ricomincia con la nuova direzione
+                    }
                     gestisciTurno(giocatori[turno]);
                     if (verificaVittoria(giocatori[turno])) {
                         terminaPartita(giocatori[turno]);
                         return;
                     }
+                    turno = (turno + 1) % giocatori.length;
                 }
             } else {
-                for (int i = giocatori.length - 1; i >= 0; i--) {
-                    turno = (turno - 1 + giocatori.length) % giocatori.length;
+                for (int i = giocatori.length - turno; i >= 0; i--) {
+                    if(prevDirezione != direzioneGioco) {
+                        break; // Se la direzione è cambiata durante il ciclo, interrompi e ricomincia con la nuova direzione
+                    }
                     gestisciTurno(giocatori[turno]);
                     if (verificaVittoria(giocatori[turno])) {
                         terminaPartita(giocatori[turno]);
                         return;
                     }
+                    turno = (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
                 }
             }
         }
