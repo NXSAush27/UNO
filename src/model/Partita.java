@@ -15,6 +15,7 @@ public class Partita implements Serializable {
     Carta cartaInGioco;
     boolean direzioneGioco; // true = orario, false = antiorario
     int turno; // Indice del giocatore attivo
+    
     public Partita(Giocatore[] giocatori){
         this.giocatori = giocatori;
         this.mazzo = new Mazzo(108);
@@ -122,6 +123,7 @@ public class Partita implements Serializable {
     public void applicaEffettoCarta(Carta carta) {
         switch (carta.getTipo()) {
             case 1: // +2
+            	System.out.println("peschi 2 carte! ");
                 if (direzioneGioco) {
                      // Il giocatore successivo pesca 2 carte e salta il turno
                     for (int i = 0; i < 2; i++) {
@@ -205,7 +207,7 @@ public class Partita implements Serializable {
             case 1: // +2
                      // Il giocatore successivo pesca 2 carte e salta il turno
                     for (int i = 0; i < 2; i++) {
-                        pescaCarta(giocatori[(0) % giocatori.length]);
+                        pescaCarta(giocatori[0]);
                     }
                 break;
             case 2: // Inverti
@@ -281,12 +283,12 @@ public class Partita implements Serializable {
             }
         }
         // Posiziona la prima carta sul tavolo
-        cartaInGioco = new Carta(-1, 1, 3);
+        cartaInGioco = new Carta(-1, 1, 1);
         // cartaInGioco = mazzo.getCarte().get(0);
         // Rimuovi la prima carta dal mazzo
         mazzo.getCarte().remove(0);
         // Inizia il ciclo di gioco
-        //applicaEffettoCartaInizio(cartaInGioco);
+        applicaEffettoCartaInizio(cartaInGioco);
         CicloGioco();
     }
     public void terminaPartita(Giocatore giocatore) {
