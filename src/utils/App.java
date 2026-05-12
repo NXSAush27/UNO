@@ -33,6 +33,7 @@ public class App {
                     }
                     partita = new Partita(giocatori);
                     partita.iniziaPartita();
+                    
                 } else if (scelta == 2) {
                     if (partita == null) {
                         System.out.println("Nessuna partita in corso da salvare!");

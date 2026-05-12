@@ -214,7 +214,6 @@ public class Partita implements Serializable {
                 break;
             case 3: // Salta
                  // Il giocatore successivo salta il turno
-                    PassaTurno(giocatori[(0) % giocatori.length]);
                     PassaTurno(giocatori[0]); 
                 break;
             case 4: // Jolly
@@ -282,7 +281,8 @@ public class Partita implements Serializable {
             }
         }
         // Posiziona la prima carta sul tavolo
-        cartaInGioco = mazzo.getCarte().get(0);
+        cartaInGioco = new Carta(-1, 1, 3);
+        // cartaInGioco = mazzo.getCarte().get(0);
         // Rimuovi la prima carta dal mazzo
         mazzo.getCarte().remove(0);
         // Inizia il ciclo di gioco
@@ -391,7 +391,7 @@ public class Partita implements Serializable {
     }
 
     public void PassaTurno(Giocatore giocatore) {
-        giocatore.setHaGiocato(true);
+        giocatore.setHaSaltato(true);
     }
 
     public void CicloGioco() {
