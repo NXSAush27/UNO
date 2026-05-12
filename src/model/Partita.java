@@ -113,6 +113,7 @@ public class Partita implements Serializable {
         if (mazzo.getCarte().size() > 0) {
             Carta cartaPescata = mazzo.getCarte().get(0);
             giocatore.aggiungiCarta(cartaPescata);
+            System.out.println(giocatore.getNome() + " ha pescato: " + cartaPescata.toString());
             // Rimuovi la carta pescata dal mazzo
             mazzo.getCarte().remove(0);
         }
@@ -204,10 +205,11 @@ public class Partita implements Serializable {
     public void applicaEffettoCartaInizio(Carta carta) {
         switch (carta.getTipo()) {
             case 1: // +2
-                     // Il giocatore successivo pesca 2 carte e salta il turno
+                    // Il giocatore successivo pesca 2 carte e salta il turno
                     for (int i = 0; i < 2; i++) {
                         pescaCarta(giocatori[0]);
                     }
+                    PassaTurno(giocatori[0]);
                 break;
             case 2: // Inverti
                 // Cambia la direzione del gioco
@@ -221,7 +223,7 @@ public class Partita implements Serializable {
                 // Il giocatore sceglie il colore da giocare
                 pilascarti.pop();
                 Carta cartacoloreScelto = new Carta(0, 0, 4); // Placeholder per la carta jolly con colore scelto
-                while(true){
+                while(true) {
                     System.out.println("Scegli il colore da giocare: 0 = Rosso, 1 = Verde, 2 = Blu, 3 = Giallo");
                     try {
                         int coloreScelto = Integer.parseInt(App.scanner.nextLine().trim());
@@ -271,9 +273,11 @@ public class Partita implements Serializable {
                 break;
         }
     }
+    
     public boolean verificaVittoria(Giocatore giocatore) {
         return giocatore.getMano().getCarte().isEmpty();
     }
+    
     public void iniziaPartita() {
         // Distribuisci le carte ai giocatori
         for (Giocatore giocatore : giocatori) {
@@ -290,25 +294,30 @@ public class Partita implements Serializable {
         applicaEffettoCartaInizio(cartaInGioco);
         CicloGioco();
     }
+    
     public void terminaPartita(Giocatore giocatore) {
-        System.out.println("Il giocatore:"+giocatore.getNome()+ " ha vinto!!");
+        System.out.println("Il giocatore:" + giocatore.getNome() + " ha vinto!!");
     }
+    
     public boolean verificaMossaValida(Carta cartaGiocata) {
         return cartaInGioco == null || cartaGiocata.getColore() == cartaInGioco.getColore() || cartaGiocata.getNumero() == cartaInGioco.getNumero() || cartaGiocata.getTipo() == 4 || cartaGiocata.getTipo() == 5;
     }
+    
     public void SegnalaUno(Giocatore giocatore) {
         if (giocatore.getMano().getCarte().size() == 1) {
             giocatore.setDettoUno(true);
         }
-        else{
+        else {
             penalizzaGiocatore(giocatore);
         }
     }
+    
     public void penalizzaGiocatore(Giocatore giocatore) {
         giocatore.aggiungiCarta(mazzo.getCarte().get(0));
         // Rimuovi la carta pescata dal mazzo
         mazzo.getCarte().remove(0);
     }
+    
     public void gestisciTurno(Giocatore giocatore) {
         if (giocatore.getMano().getCarte().isEmpty()) {
             return; // Il giocatore ha già vinto, salta il turno
