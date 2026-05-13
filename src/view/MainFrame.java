@@ -47,12 +47,15 @@ public class MainFrame extends JFrame {
         return gamePanel;
     }
 
-    /**
-     * Called by App to inject the GameController into all panels that need it.
-     */
+    /** Called by App to inject the GameController into all panels that need it. */
     public void setGameController(GameController controller) {
         this.gameController = controller;
         configPanel.setController(controller);
         gamePanel.setController(controller);
+    }
+
+    /** Imposta la modalità simulazione per il pannello di configurazione. */
+    public void setSimulationMode(boolean mode) {
+        configPanel.setModalitaSimulazione(mode);
     }
 }

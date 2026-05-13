@@ -8,6 +8,7 @@ public class GameController {
     private Partita partita;
     private GamePanel gamePanel;
     private MainFrame mainFrame;
+    private boolean inTransizione = false;
 
     public GameController(MainFrame frame, GamePanel panel) {
         this.mainFrame = frame;
@@ -18,9 +19,9 @@ public class GameController {
      * Called by ConfigPanel "Avvia Partita" button.
      * Creates the Partita model, distributes cards, and switches to GAME view.
      */
-    public void avviaNuovaPartita(int numGiocatori, int sogliaPunti) {
+    public void avviaNuovaPartita(Giocatore[] giocatori, int sogliaPunti) {
         // 1. Crea il model
-        partita = new Partita(numGiocatori, sogliaPunti);
+        partita = new Partita(giocatori, sogliaPunti);
         partita.distribuisciCarteIniziali();
 
         // 2. Aggiorna la grafica per il primo turno
@@ -39,6 +40,8 @@ public class GameController {
      */
     public void gestisciClickCarta(int indiceCarta) {
         if (partita == null) return;
+
+        if (inTransizione) return; // Ignore clicks during transition overlay
 
         Giocatore corrente = partita.getGiocatoreCorrente();
         // Guarda se l'indice è ancora valido (la mano potrebbe essere cambiata)
@@ -63,9 +66,18 @@ public class GameController {
             }
 
             // Passa al prossimo turno
+            boolean currentWasHuman = corrente instanceof GiocatoreUmano;
             partita.passaTurno();
-            gamePanel.aggiornaTavolo(partita);
+            Giocatore next = partita.getGiocatoreCorrente();
 
+            // Check for hotseat transition: next is human AND previous was human
+            if (next instanceof GiocatoreUmano && currentWasHuman) {
+                inTransizione = true;
+                gamePanel.mostraTransizionePassaggio(next.getNome());
+                return; // Skip immediate aggiornaTavolo
+            }
+
+            gamePanel.aggiornaTavolo(partita);
             controllaTurnoBot();
 
         } else {
@@ -79,11 +91,22 @@ public class GameController {
     public void gestisciClickPesca() {
         if (partita == null) return;
 
+        if (inTransizione) return; // Ignore during overlay
+
         Giocatore corrente = partita.getGiocatoreCorrente();
+        boolean currentWasHuman = corrente instanceof GiocatoreUmano;
         partita.pescaCarta(corrente);
         gamePanel.aggiungiLog(corrente.getNome() + " ha pescato una carta.");
 
         partita.passaTurno();
+
+        Giocatore next = partita.getGiocatoreCorrente();
+        if (next instanceof GiocatoreUmano && currentWasHuman) {
+            inTransizione = true;
+            gamePanel.mostraTransizionePassaggio(next.getNome());
+            return;
+        }
+
         gamePanel.aggiornaTavolo(partita);
         controllaTurnoBot();
     }
@@ -111,6 +134,16 @@ public class GameController {
         Giocatore corrente = partita.getGiocatoreCorrente();
         partita.SegnalaUno(corrente);
         gamePanel.aggiungiLog(corrente.getNome() + " ha dichiarato UNO!");
+    }
+
+    /**
+     * Called by GamePanel when overlay is clicked to confirm player change.
+     */
+    public void confermaPassaggio() {
+        inTransizione = false;
+        gamePanel.nascondiTransizione();
+        gamePanel.aggiornaTavolo(partita);
+        controllaTurnoBot();
     }
 
     /**

@@ -1,6 +1,7 @@
 package model;
 
 import java.io.Serializable;
+import utils.App;
 
 public class GiocatoreUmano extends Giocatore implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -40,5 +41,15 @@ public class GiocatoreUmano extends Giocatore implements Serializable {
     @Override
     public Carta decidiMossa(Partita partita) {
         return null;
+    }
+
+    @Override
+    public int scegliColore(Partita partita) {
+        return App.scegliColore();
+    }
+
+    @Override
+    public void provaDichiaraUno(Partita partita) {
+        // No automatic declaration; human must press button
     }
 }

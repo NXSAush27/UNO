@@ -26,7 +26,10 @@ public class MenuPanel extends JPanel {
 
         // --- BOTTONE: NUOVA PARTITA ---
         JButton btnNuova = creaBottoneMenu("Nuova Partita");
-        btnNuova.addActionListener(e -> mainFrame.showPanel("CONFIG"));
+        btnNuova.addActionListener(e -> {
+            mainFrame.setSimulationMode(false);
+            mainFrame.showPanel("CONFIG");
+        });
         gbc.gridy = 1;
         add(btnNuova, gbc);
 
@@ -42,8 +45,8 @@ public class MenuPanel extends JPanel {
         // --- BOTTONE: SIMULAZIONE BOT [cite: 246] ---
         JButton btnSimulazione = creaBottoneMenu("Modalità Simulazione");
         btnSimulazione.addActionListener(e -> {
-            // Vai a una configurazione specifica per i bot
-            mainFrame.showPanel("CONFIG"); 
+            mainFrame.setSimulationMode(true);
+            mainFrame.showPanel("CONFIG");
         });
         gbc.gridy = 3;
         add(btnSimulazione, gbc);

@@ -42,4 +42,33 @@ public class GiocatoreBot extends Giocatore implements Serializable {
         }
         return null;
     }
+
+    @Override
+    public int scegliColore(Partita partita) {
+        int[] counts = new int[4];
+        for (Carta c : getMano().getCarte()) {
+            int col = c.getColore();
+            if (col >= 0 && col <= 3) {
+                counts[col]++;
+            }
+        }
+        int total = counts[0] + counts[1] + counts[2] + counts[3];
+        if (total == 0) {
+            return (int) (Math.random() * 4);
+        }
+        int maxIdx = 0;
+        for (int i = 1; i < 4; i++) {
+            if (counts[i] > counts[maxIdx]) {
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
+    }
+
+    @Override
+    public void provaDichiaraUno(Partita partita) {
+        if (getMano().getCarte().size() == 1) {
+            setDettoUno(true);
+        }
+    }
 }

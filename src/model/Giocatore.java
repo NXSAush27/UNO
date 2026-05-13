@@ -52,4 +52,6 @@ public abstract class Giocatore implements Serializable {
         return haSaltato;
     }
     public abstract Carta decidiMossa(Partita partita);
+    public abstract int scegliColore(Partita partita);
+    public abstract void provaDichiaraUno(Partita partita);
 }

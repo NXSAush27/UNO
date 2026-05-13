@@ -34,23 +34,16 @@ public class Partita implements Serializable {
     }
 
     public Partita(int numGiocatori, int sogliaPunti) {
-        this.sogliaPunti = sogliaPunti;
-        this.giocatori = new Giocatore[numGiocatori];
+        this(creaGiocatoriDefault(numGiocatori), sogliaPunti);
+    }
+
+    private static Giocatore[] creaGiocatoriDefault(int numGiocatori) {
+        Giocatore[] arr = new Giocatore[numGiocatori];
         for (int i = 0; i < numGiocatori; i++) {
-            if (i == 0) {
-                giocatori[i] = new GiocatoreUmano("Giocatore " + (i + 1));
-            } else {
-                giocatori[i] = new GiocatoreBot("Bot " + i);
-            }
+            arr[i] = (i == 0) ? new GiocatoreUmano("Giocatore " + (i+1))
+                              : new GiocatoreBot("Bot " + i);
         }
-        this.mazzo = new Mazzo(108);
-        this.pilascarti = new Stack<>();
-        this.cartaInGioco = null;
-        this.direzioneGioco = true;
-        this.turno = 0;
-        for (int i = 0; i < Math.random() * 100; i++) {
-            this.mazzo.mescola();
-        }
+        return arr;
     }
 
     public void distribuisciCarteIniziali() {
@@ -159,17 +152,36 @@ public class Partita implements Serializable {
         this.direzioneGioco = direzioneGioco;
     }
 
+    public int getTurno() {
+        return turno;
+    }
+
+    public Partita(Giocatore[] giocatori, int sogliaPunti) {
+        this.giocatori = giocatori;
+        this.mazzo = new Mazzo(108);
+        this.pilascarti = new Stack<>();
+        this.cartaInGioco = null;
+        this.direzioneGioco = true;
+        this.turno = 0;
+        this.sogliaPunti = sogliaPunti;
+        for (int i = 0; i < Math.random() * 100; i++) {
+            this.mazzo.mescola();
+        }
+    }
+
     public void giocaCarta(Giocatore giocatore, int posizioneCarta) {
         Carta cartaGiocata = giocatore.getMano().getCarte().get(posizioneCarta);
         if (verificaMossaValida(cartaGiocata)) {
             giocatore.rimuoviCartaAPosizione(posizioneCarta);
             pilascarti.push(cartaInGioco);
             cartaInGioco = cartaGiocata;
+            // Allow player to declare UNO (bot auto, human no-op unless button pressed earlier)
+            giocatore.provaDichiaraUno(this);
             if (giocatore.getMano().getCarte().size() == 1 && !giocatore.isDettoUno()) {
                 penalizzaGiocatore(giocatore);
             }
             if (cartaGiocata.getTipo() != 0) {
-                applicaEffettoCarta(cartaGiocata);
+                applicaEffettoCarta(giocatore, cartaGiocata);
             }
         }
     }
@@ -187,7 +199,7 @@ public class Partita implements Serializable {
         giocatore.setHaGiocato(true);
     }
 
-    public void applicaEffettoCarta(Carta carta) {
+    public void applicaEffettoCarta(Giocatore giocatore, Carta carta) {
         switch (carta.getTipo()) {
             case 1: // +2
                 if (direzioneGioco) {
@@ -212,7 +224,8 @@ public class Partita implements Serializable {
                 break;
             case 4: // Jolly
                 pilascarti.pop();
-                Carta cartacoloreScelto = new Carta(0, App.scegliColore(), 4);
+                int coloreJolly = giocatore.scegliColore(this);
+                Carta cartacoloreScelto = new Carta(0, coloreJolly, 4);
                 cartaInGioco = cartacoloreScelto;
                 break;
             case 5: // +4
@@ -229,7 +242,8 @@ public class Partita implements Serializable {
                     PassaTurno(giocatori[prevIndex]);
                 }
                 pilascarti.pop();
-                Carta cartacoloreScelto4 = new Carta(0, App.scegliColore(), 4);
+                int colorePlus4 = giocatore.scegliColore(this);
+                Carta cartacoloreScelto4 = new Carta(0, colorePlus4, 4);
                 cartaInGioco = cartacoloreScelto4;
                 break;
         }
