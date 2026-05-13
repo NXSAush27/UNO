@@ -34,8 +34,12 @@ public class GiocatoreBot extends Giocatore implements Serializable {
         return nome;
     }
     @Override
-    public int decidiMossa() {
-        // Implementazione per il giocatore bot
-        return 0;
+    public Carta decidiMossa(Partita partita) {
+        for (Carta carta : getMano().getCarte()) {
+            if (partita.verificaMossaValida(carta)) {
+                return carta;
+            }
+        }
+        return null;
     }
 }

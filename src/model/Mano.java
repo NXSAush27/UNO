@@ -17,4 +17,8 @@ public class Mano implements Serializable {
     public ArrayList<Carta> getCarte() {
         return carte;
     }
+
+    public Carta get(int index) {
+        return carte.get(index);
+    }
 }

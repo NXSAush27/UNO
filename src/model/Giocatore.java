@@ -51,5 +51,5 @@ public abstract class Giocatore implements Serializable {
     public boolean getHaSaltato() {
         return haSaltato;
     }
-    public abstract int decidiMossa();
+    public abstract Carta decidiMossa(Partita partita);
 }
