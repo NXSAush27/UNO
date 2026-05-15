@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Stack;
 import utils.App;
 
@@ -17,144 +18,7 @@ public class Partita implements Serializable {
     Carta cartaInGioco;
     boolean direzioneGioco; // true = orario, false = antiorario
     int turno; // Indice del giocatore attivo
-
-    private int sogliaPunti;
-
-    public Partita(Giocatore[] giocatori) {
-        this.giocatori = giocatori;
-        this.mazzo = new Mazzo(108);
-        this.pilascarti = new Stack<>();
-        this.cartaInGioco = null;
-        this.direzioneGioco = true;
-        this.turno = 0;
-        this.sogliaPunti = 500;
-        for (int i = 0; i < Math.random() * 100; i++) {
-            this.mazzo.mescola();
-        }
-    }
-
-    public Partita(int numGiocatori, int sogliaPunti) {
-        this(creaGiocatoriDefault(numGiocatori), sogliaPunti);
-    }
-
-    private static Giocatore[] creaGiocatoriDefault(int numGiocatori) {
-        Giocatore[] arr = new Giocatore[numGiocatori];
-        for (int i = 0; i < numGiocatori; i++) {
-            arr[i] = (i == 0) ? new GiocatoreUmano("Giocatore " + (i+1))
-                              : new GiocatoreBot("Bot " + i);
-        }
-        return arr;
-    }
-
-    public void distribuisciCarteIniziali() {
-        for (Giocatore giocatore : giocatori) {
-            for (int i = 0; i < 7; i++) {
-                pescaCarta(giocatore);
-            }
-        }
-        cartaInGioco = mazzo.getCarte().get(0);
-        mazzo.getCarte().remove(0);
-    }
-
-    public Giocatore getGiocatoreCorrente() {
-        return giocatori[turno];
-    }
-
-    public boolean isMossaValida(Carta carta) {
-        return cartaInGioco == null || carta.getColore() == cartaInGioco.getColore()
-            || carta.getNumero() == cartaInGioco.getNumero()
-            || carta.getTipo() == 4 || carta.getTipo() == 5;
-    }
-
-    public void giocaCarta(Giocatore giocatore, Carta carta) {
-        int posizione = giocatore.getMano().getCarte().indexOf(carta);
-        if (posizione >= 0) {
-            giocaCarta(giocatore, posizione);
-        }
-    }
-
-    public void passaTurno() {
-        turno = (turno + 1) % giocatori.length;
-    }
-
-    public void salvaPartita(String filePath) {
-        try (FileOutputStream fos = new FileOutputStream(filePath);
-             ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-            oos.writeObject(mazzo);
-            oos.writeObject(pilascarti);
-            oos.writeObject(cartaInGioco);
-            oos.writeBoolean(direzioneGioco);
-            oos.writeInt(turno);
-            oos.writeInt(giocatori.length);
-            for (Giocatore g : giocatori) {
-                oos.writeObject(g);
-            }
-            System.out.println("Partita salvata con successo!");
-        } catch (IOException e) {
-            System.out.println("Errore durante il salvataggio: " + e.getMessage());
-        }
-    }
-
-    public void salvaPartita() {
-        salvaPartita("savegame.dat");
-    }
-
-    public Partita caricaPartita(String filePath) {
-        try (FileInputStream fis = new FileInputStream(filePath);
-             ObjectInputStream ois = new ObjectInputStream(fis)) {
-            this.mazzo = (Mazzo) ois.readObject();
-            this.pilascarti = (Stack<Carta>) ois.readObject();
-            this.cartaInGioco = (Carta) ois.readObject();
-            this.direzioneGioco = ois.readBoolean();
-            this.turno = ois.readInt();
-            int numGiocatori = ois.readInt();
-            this.giocatori = new Giocatore[numGiocatori];
-            for (int i = 0; i < numGiocatori; i++) {
-                this.giocatori[i] = (Giocatore) ois.readObject();
-            }
-            System.out.println("Partita caricata con successo!");
-            return this;
-        } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Errore durante il caricamento: " + e.getMessage());
-            return null;
-        }
-    }
-
-    public Partita caricaPartita() {
-        return caricaPartita("savegame.dat");
-    }
-
-    public Giocatore[] getGiocatori() {
-        return giocatori;
-    }
-
-    public Mazzo getMazzo() {
-        return mazzo;
-    }
-
-    public Stack<Carta> getPilascarti() {
-        return pilascarti;
-    }
-
-    public Carta getCartaInGioco() {
-        return cartaInGioco;
-    }
-
-    public boolean isDirezioneGioco() {
-        return direzioneGioco;
-    }
-
-    public void setCartaInGioco(Carta cartaInGioco) {
-        this.cartaInGioco = cartaInGioco;
-    }
-
-    public void setDirezioneGioco(boolean direzioneGioco) {
-        this.direzioneGioco = direzioneGioco;
-    }
-
-    public int getTurno() {
-        return turno;
-    }
+    int sogliaPunti;
 
     public Partita(Giocatore[] giocatori, int sogliaPunti) {
         this.giocatori = giocatori;
@@ -169,20 +33,115 @@ public class Partita implements Serializable {
         }
     }
 
+    public void inizializzaMano() {
+        for (Giocatore giocatore : giocatori) {
+            for (int i = 0; i < 7; i++) {
+                pescaCarta(giocatore);
+            }
+        }
+        cartaInGioco = mazzo.getCarte().get(0);
+        mazzo.getCarte().remove(0);
+    }
+
+    // Backwards-compatible alias
+    public void distribuisciCarteIniziali() {
+        inizializzaMano();
+    }
+
+    public Giocatore getGiocatoreCorrente() {
+        return giocatori[turno];
+    }
+
+    public Carta getCartaInGioco() {
+        return cartaInGioco;
+    }
+
+    public Giocatore[] getGiocatori() {
+        return giocatori;
+    }
+
+    public boolean isMossaValida(Carta carta) {
+        return cartaInGioco == null
+            // wild / +4 always playable
+            || carta.getTipo() >= 4
+            // match colour
+            || carta.getColore() == cartaInGioco.getColore()
+            // same face value on number cards, OR same action type on action cards
+            || (carta.getTipo() == 0
+                ? carta.getNumero() == cartaInGioco.getNumero()
+                : carta.getTipo() == cartaInGioco.getTipo());
+    }
+
+    public void giocaCarta(Giocatore giocatore, Carta carta) {
+        int posizione = giocatore.getMano().getCarte().indexOf(carta);
+        if (posizione >= 0) {
+            giocaCarta(giocatore, posizione);
+        } else {
+            List<Carta> list = giocatore.getMano().getCarte();
+            for (int i = 0; i < list.size(); i++) {
+                Carta c = list.get(i);
+                if (c.getNumero() == carta.getNumero()
+                        && c.getColore() == carta.getColore()
+                        && c.getTipo() == carta.getTipo()) {
+                    giocaCarta(giocatore, i);
+                    return;
+                }
+            }
+            System.err.println("Carta non trovata nella mano: " + carta);
+        }
+    }
+
+    /**
+     * Advance one turn. If the next player is marked as stunned (haSaltato)
+     * they are skipped and the flag is consumed immediately.
+     */
+    public void passaTurno() {
+        int nextIdx;
+        if (direzioneGioco) {
+            nextIdx = (turno + 1) % giocatori.length;
+        } else {
+            nextIdx = (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
+        }
+        Giocatore next = giocatori[nextIdx];
+        if (next.isHaSaltato()) {
+            next.setHaSaltato(false); // consume stun
+            // skip
+            if (direzioneGioco) {
+                turno = (nextIdx + 1) % giocatori.length;
+            } else {
+                turno = (nextIdx - 1 < 0) ? giocatori.length - 1 : nextIdx - 1;
+            }
+        } else {
+            turno = nextIdx;
+        }
+    }
+
+    // Overload used by applicaEffettoCarta — only sets the flag, does NOT advance
+    public void PassaTurno(Giocatore giocatore) {
+        giocatore.setHaSaltato(true);
+    }
+
     public void giocaCarta(Giocatore giocatore, int posizioneCarta) {
         Carta cartaGiocata = giocatore.getMano().getCarte().get(posizioneCarta);
         if (verificaMossaValida(cartaGiocata)) {
+            Mano mano = giocatore.getMano();
+
             giocatore.rimuoviCartaAPosizione(posizioneCarta);
             pilascarti.push(cartaInGioco);
             cartaInGioco = cartaGiocata;
-            // Allow player to declare UNO (bot auto, human no-op unless button pressed earlier)
-            giocatore.provaDichiaraUno(this);
-            if (giocatore.getMano().getCarte().size() == 1 && !giocatore.isDettoUno()) {
+
+            // UNO / penalità
+            if (mano.getCarte().size() == 1 && !giocatore.isDettoUno()) {
                 penalizzaGiocatore(giocatore);
             }
+
             if (cartaGiocata.getTipo() != 0) {
                 applicaEffettoCarta(giocatore, cartaGiocata);
             }
+
+            // Reset UNO flag AFTER the penalty check
+            giocatore.setDettoUno(false);
+            giocatore.provaDichiaraUno(this);
         }
     }
 
@@ -193,10 +152,6 @@ public class Partita implements Serializable {
             System.out.println(giocatore.getNome() + " ha pescato: " + cartaPescata.toString());
             mazzo.getCarte().remove(0);
         }
-    }
-
-    public void passaTurno(Giocatore giocatore) {
-        giocatore.setHaGiocato(true);
     }
 
     public void applicaEffettoCarta(Giocatore giocatore, Carta carta) {
@@ -215,11 +170,11 @@ public class Partita implements Serializable {
             case 2: // Inverti
                 direzioneGioco = !direzioneGioco;
                 break;
-            case 3: // Salta
+            case 3: // Salta — marca il prossimo giocatore come stunnato
                 if (direzioneGioco) {
-                    PassaTurno(giocatori[(turno + 1) % giocatori.length]);
+                    giocatori[(turno + 1) % giocatori.length].setHaSaltato(true);
                 } else {
-                    PassaTurno(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]);
+                    giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1].setHaSaltato(true);
                 }
                 break;
             case 4: // Jolly
@@ -229,21 +184,19 @@ public class Partita implements Serializable {
                 cartaInGioco = cartacoloreScelto;
                 break;
             case 5: // +4
+                int nextForDraw;
                 if (direzioneGioco) {
-                    for (int i = 0; i < 4; i++) {
-                        pescaCarta(giocatori[(turno + 1) % giocatori.length]);
-                    }
-                    PassaTurno(giocatori[(turno + 1) % giocatori.length]);
+                    nextForDraw = (turno + 1) % giocatori.length;
                 } else {
-                    int prevIndex = turno - 1 < 0 ? giocatori.length - 1 : turno - 1;
-                    for (int i = 0; i < 4; i++) {
-                        pescaCarta(giocatori[prevIndex]);
-                    }
-                    PassaTurno(giocatori[prevIndex]);
+                    nextForDraw = turno - 1 < 0 ? giocatori.length - 1 : turno - 1;
                 }
+                for (int i = 0; i < 4; i++) {
+                    pescaCarta(giocatori[nextForDraw]);
+                }
+                giocatori[nextForDraw].setHaSaltato(true);
                 pilascarti.pop();
                 int colorePlus4 = giocatore.scegliColore(this);
-                Carta cartacoloreScelto4 = new Carta(0, colorePlus4, 4);
+                Carta cartacoloreScelto4 = new Carta(0, colorePlus4, 5);
                 cartaInGioco = cartacoloreScelto4;
                 break;
         }
@@ -251,38 +204,29 @@ public class Partita implements Serializable {
 
     public void applicaEffettoCartaInizio(Carta carta) {
         switch (carta.getTipo()) {
-            case 1: // +2
+            case 1: // +2 — il giocatore 0 pesca due
                 for (int i = 0; i < 2; i++) {
                     pescaCarta(giocatori[0]);
                 }
-                PassaTurno(giocatori[0]);
                 break;
             case 2: // Inverti
                 direzioneGioco = !direzioneGioco;
                 break;
-            case 3: // Salta
-                PassaTurno(giocatori[0]);
+            case 3: // Salta — giocatore 0 stunnato
+                giocatori[0].setHaSaltato(true);
                 break;
             case 4: // Jolly
                 pilascarti.pop();
                 Carta cartacoloreScelto = new Carta(0, App.scegliColore(), 4);
                 cartaInGioco = cartacoloreScelto;
                 break;
-            case 5: // +4
-                if (direzioneGioco) {
-                    for (int i = 0; i < 4; i++) {
-                        pescaCarta(giocatori[(turno + 1) % giocatori.length]);
-                    }
-                    PassaTurno(giocatori[(turno + 1) % giocatori.length]);
-                } else {
-                    int prevIndex = turno - 1 < 0 ? giocatori.length - 1 : turno - 1;
-                    for (int i = 0; i < 4; i++) {
-                        pescaCarta(giocatori[prevIndex]);
-                    }
-                    PassaTurno(giocatori[prevIndex]);
+            case 5: // +4 — giocatore 0 pesca 4 e viene stunnato
+                for (int i = 0; i < 4; i++) {
+                    pescaCarta(giocatori[0]);
                 }
+                giocatori[0].setHaSaltato(true);
                 pilascarti.pop();
-                Carta cartacoloreScelto4 = new Carta(0, App.scegliColore(), 4);
+                Carta cartacoloreScelto4 = new Carta(0, App.scegliColore(), 5);
                 cartaInGioco = cartacoloreScelto4;
                 break;
         }
@@ -292,14 +236,31 @@ public class Partita implements Serializable {
         return giocatore.getMano().getCarte().isEmpty();
     }
 
-    public void iniziaPartita() {
-        for (Giocatore giocatore : giocatori) {
-            for (int i = 0; i < 7; i++) {
-                pescaCarta(giocatore);
-            }
+    public void salvaPartita(String filePath) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(filePath);
+             ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(this);
         }
-        cartaInGioco = new Carta(-1, 1, 1);
-        mazzo.getCarte().remove(0);
+    }
+
+    // Convenience overload — saves to default file
+    public void salvaPartita() {
+        try {
+            salvaPartita("savegame.dat");
+        } catch (IOException e) {
+            System.err.println("Errore salvataggio: " + e.getMessage());
+        }
+    }
+
+    public static Partita caricaPartita(String filePath) throws IOException, ClassNotFoundException {
+        try (FileInputStream fis = new FileInputStream(filePath);
+             ObjectInputStream ois = new ObjectInputStream(fis)) {
+            return (Partita) ois.readObject();
+        }
+    }
+
+    public void iniziaPartita() {
+        inizializzaMano();
         applicaEffettoCartaInizio(cartaInGioco);
         CicloGioco();
     }
@@ -309,9 +270,15 @@ public class Partita implements Serializable {
     }
 
     public boolean verificaMossaValida(Carta cartaGiocata) {
-        return cartaInGioco == null || cartaGiocata.getColore() == cartaInGioco.getColore()
-            || cartaGiocata.getNumero() == cartaInGioco.getNumero()
-            || cartaGiocata.getTipo() == 4 || cartaGiocata.getTipo() == 5;
+        return cartaInGioco == null
+            // wild / +4 always playable
+            || cartaGiocata.getTipo() == 4 || cartaGiocata.getTipo() == 5
+            // match colour
+            || cartaGiocata.getColore() == cartaInGioco.getColore()
+            // same face value on number cards, OR same action type on action cards
+            || (cartaGiocata.getTipo() == 0
+                ? cartaGiocata.getNumero() == cartaInGioco.getNumero()
+                : cartaGiocata.getTipo() == cartaInGioco.getTipo());
     }
 
     public void SegnalaUno(Giocatore giocatore) {
@@ -353,18 +320,12 @@ public class Partita implements Serializable {
         giocatore.setHaGiocato(true);
     }
 
-    public void PassaTurno(Giocatore giocatore) {
-        giocatore.setHaSaltato(true);
-    }
-
     public void CicloGioco() {
         while (true) {
             boolean prevDirezione = direzioneGioco;
             if (direzioneGioco) {
                 for (int i = turno; i < giocatori.length; i++) {
-                    if (prevDirezione != direzioneGioco) {
-                        break;
-                    }
+                    if (prevDirezione != direzioneGioco) break;
                     gestisciTurno(giocatori[turno]);
                     if (verificaVittoria(giocatori[turno])) {
                         terminaPartita(giocatori[turno]);
@@ -374,9 +335,7 @@ public class Partita implements Serializable {
                 }
             } else {
                 for (int i = giocatori.length - turno; i >= 0; i--) {
-                    if (prevDirezione != direzioneGioco) {
-                        break;
-                    }
+                    if (prevDirezione != direzioneGioco) break;
                     gestisciTurno(giocatori[turno]);
                     if (verificaVittoria(giocatori[turno])) {
                         terminaPartita(giocatori[turno]);

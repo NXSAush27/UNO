@@ -19,13 +19,20 @@ public class GameController {
      * Called by ConfigPanel "Avvia Partita" button.
      * Creates the Partita model, distributes cards, and switches to GAME view.
      */
-    public void avviaNuovaPartita(Giocatore[] giocatori, int sogliaPunti) {
-        // 1. Crea il model
-        partita = new Partita(giocatori, sogliaPunti);
-        partita.distribuisciCarteIniziali();
+public void avviaNuovaPartita(Giocatore[] giocatori, int sogliaPunti) {
+         // 1. Crea il model
+         partita = new Partita(giocatori, sogliaPunti);
+         partita.distribuisciCarteIniziali();
 
-        // 2. Aggiorna la grafica per il primo turno
-        gamePanel.aggiornaTavolo(partita);
+         // 2. Inietta GamePanel nei bot player
+         for (Giocatore g : giocatori) {
+             if (g instanceof GiocatoreBot bot) {
+                 bot.setGamePanel(gamePanel);
+             }
+         }
+
+         // 3. Aggiorna la grafica per il primo turno
+         gamePanel.aggiornaTavolo(partita);
         gamePanel.aggiungiLog("Partita iniziata! Turno di: "
                 + partita.getGiocatoreCorrente().getNome());
 
@@ -70,14 +77,16 @@ public class GameController {
             partita.passaTurno();
             Giocatore next = partita.getGiocatoreCorrente();
 
+            // Update the UI BEFORE showing overlay (so hand reflects played card)
+            gamePanel.aggiornaTavolo(partita);
+
             // Check for hotseat transition: next is human AND previous was human
             if (next instanceof GiocatoreUmano && currentWasHuman) {
                 inTransizione = true;
                 gamePanel.mostraTransizionePassaggio(next.getNome());
-                return; // Skip immediate aggiornaTavolo
+                return;
             }
 
-            gamePanel.aggiornaTavolo(partita);
             controllaTurnoBot();
 
         } else {
@@ -101,13 +110,16 @@ public class GameController {
         partita.passaTurno();
 
         Giocatore next = partita.getGiocatoreCorrente();
+        
+        // Update the UI BEFORE showing overlay
+        gamePanel.aggiornaTavolo(partita);
+        
         if (next instanceof GiocatoreUmano && currentWasHuman) {
             inTransizione = true;
             gamePanel.mostraTransizionePassaggio(next.getNome());
             return;
         }
 
-        gamePanel.aggiornaTavolo(partita);
         controllaTurnoBot();
     }
 
@@ -125,6 +137,36 @@ public class GameController {
         gamePanel.aggiungiLog("Partita salvata in savegame.dat");
     }
 
+    public void caricaPartita() {
+        try {
+            Partita caricata = Partita.caricaPartita("savegame.dat");
+            if (caricata != null) {
+                this.partita = caricata;
+
+                // Re-inject GamePanel into any bot players
+                for (Giocatore g : partita.getGiocatori()) {
+                    if (g instanceof GiocatoreBot bot) {
+                        bot.setGamePanel(gamePanel);
+                    }
+                }
+
+                gamePanel.aggiornaTavolo(partita);
+                gamePanel.aggiungiLog("Partita caricata da savegame.dat");
+                mainFrame.showPanel("GAME");
+
+                controllaTurnoBot();
+            } else {
+                JOptionPane.showMessageDialog(gamePanel,
+                        "Nessuna partita salvata trovata!",
+                        "Errore", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(gamePanel,
+                    "Errore nel caricamento: " + e.getMessage(),
+                    "Errore", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     /**
      * Called by GamePanel "Dichiara UNO!" button.
      */
@@ -132,8 +174,10 @@ public class GameController {
         if (partita == null) return;
 
         Giocatore corrente = partita.getGiocatoreCorrente();
+        int handSize = corrente.getMano().getCarte().size();
         partita.SegnalaUno(corrente);
-        gamePanel.aggiungiLog(corrente.getNome() + " ha dichiarato UNO!");
+        gamePanel.aggiungiLog(corrente.getNome()
+                + " ha dichiarato UNO! (carte=" + handSize + ")");
     }
 
     /**
@@ -146,6 +190,9 @@ public class GameController {
         controllaTurnoBot();
     }
 
+    /**
+     * If the current player is a bot, executes its turn after a short delay.
+     */
     /**
      * If the current player is a bot, executes its turn after a short delay.
      */
@@ -179,9 +226,13 @@ public class GameController {
 
                 partita.passaTurno();
                 gamePanel.aggiornaTavolo(partita);
-                controllaTurnoBot();
+                // NOT calling controllaTurnoBot() here recursively.
+                // The next trigger comes ONLY from aggiornaTavolo via the
+                // human click path (gestisciClickCarta / gestisciClickPesca /
+                // confermaPassaggio). This gives the human time to think.
             });
             timer.setRepeats(false);
+            System.out.println("[BOT] Starting timer for " + corrente.getNome());
             timer.start();
         }
     }

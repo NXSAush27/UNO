@@ -1,13 +1,18 @@
 package model;
 
 import java.io.Serializable;
+import view.GamePanel;
 
 public class GiocatoreBot extends Giocatore implements Serializable {
     private static final long serialVersionUID = 1L;
     private String nome;
+    private transient GamePanel gamePanel; // Per log dichiarazione UNO
     public GiocatoreBot(String nome){
         super();
         this.nome = nome;
+    }
+    public void setGamePanel(GamePanel gamePanel) {
+        this.gamePanel = gamePanel;
     }
     @Override
     public Mano getMano() {
@@ -69,6 +74,7 @@ public class GiocatoreBot extends Giocatore implements Serializable {
     public void provaDichiaraUno(Partita partita) {
         if (getMano().getCarte().size() == 1) {
             setDettoUno(true);
+            gamePanel.aggiungiLog(getNome() + " ha dichiarato UNO!");
         }
     }
 }

@@ -54,6 +54,10 @@ public class MainFrame extends JFrame {
         gamePanel.setController(controller);
     }
 
+    public GameController getGameController() {
+        return gameController;
+    }
+
     /** Imposta la modalità simulazione per il pannello di configurazione. */
     public void setSimulationMode(boolean mode) {
         configPanel.setModalitaSimulazione(mode);

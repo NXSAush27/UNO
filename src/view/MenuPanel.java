@@ -37,7 +37,7 @@ public class MenuPanel extends JPanel {
         JButton btnCarica = creaBottoneMenu("Carica Partita");
         btnCarica.addActionListener(e -> {
             // Qui chiamerai il metodo per caricare il file .ser o .json
-            JOptionPane.showMessageDialog(this, "Funzionalità di caricamento da implementare");
+            mainFrame.getGameController().caricaPartita();
         });
         gbc.gridy = 2;
         add(btnCarica, gbc);
