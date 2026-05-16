@@ -3,98 +3,83 @@ package view;
 import controller.GameController;
 import model.Carta;
 import model.Giocatore;
-import model.GiocatoreBot;
-import model.GiocatoreUmano;
-import model.Mano;
 import model.Partita;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.List;
+import java.io.File;
 
 public class GamePanel extends JPanel {
     private MainFrame mainFrame;
     private GameController controller;
     private JTextArea areaStorico;
     private JPanel pannelloMano;
+    private JPanel pannelloAvversari;
     private JLabel labelScarti;
+    private JButton btnPesca;
     private JLabel labelTurno;
     private Partita partitaCorrente;
+    private JPanel overlay;
+    private JLabel labelTransizione;
 
-    // Panel per avversari
-    private JPanel panelNorth;
-    private JPanel panelWest;
-    private JPanel panelEast;
-
-    // Overlay per transizione hotseat
-    private JPanel overlayPassaggio;
-
-    // Cached card back image (used to hide bot's hand from the human player)
-    private static ImageIcon cardBackIcon;
-
-    // Constants for image paths and card dimensions
-    private static final String IMG_PATH_BASE = "/UnoCards/";
-    private static final int CARD_WIDTH = 70;
-    private static final int CARD_HEIGHT = 100;
-
-    // Carta.colore → folder name mapping
-    // 0=rosso=red, 1=verde=green, 2=blu=blue, 3=giallo=yellow, 4=jolly=wild
-    private static final String[] COLORE_NOMI = {"red", "green", "blue", "yellow", "wild"};
-
-    static {
-        java.net.URL imgURL = GamePanel.class.getResource("/UnoCards/card back/card_back.png");
-        if (imgURL != null) {
-            Image img = new ImageIcon(imgURL).getImage();
-            Image scaled = img.getScaledInstance(CARD_WIDTH, CARD_HEIGHT, Image.SCALE_SMOOTH);
-            cardBackIcon = new ImageIcon(scaled);
-        } else {
-            cardBackIcon = null;
-        }
-    }
-
-    // ────────────────────────────────────────────
-    // Constructor / setup
-    // ────────────────────────────────────────────
+    // Dimensioni costanti per le carte
+    private final int CARD_WIDTH = 70;
+    private final int CARD_HEIGHT = 100;
+    private final int SMALL_CARD_WIDTH = 35;
+    private final int SMALL_CARD_HEIGHT = 50;
 
     public GamePanel(MainFrame frame) {
         this.mainFrame = frame;
         setLayout(new BorderLayout());
+        setBackground(new Color(34, 139, 34)); // Sfondo verde tavolo da gioco
 
-        // ── ZONA CENTRALE: discard pile + draw button ──
-        JPanel centro = new JPanel();
-        labelScarti = new JLabel("CARTA IN CIMA: [Nessuna]");
+        // --- ZONA NORD: Avversari (Carte coperte) ---
+        pannelloAvversari = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 10));
+        pannelloAvversari.setOpaque(false);
+        add(pannelloAvversari, BorderLayout.NORTH);
+
+        // --- ZONA CENTRALE: Mazzo e Scarti ---
+        JPanel centro = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 50));
+        centro.setOpaque(false);
+        
+        // Pila scarti
+        labelScarti = new JLabel();
+        labelScarti.setPreferredSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
         centro.add(labelScarti);
 
-        JButton btnPesca = new JButton("Pesca Carta");
+        // Mazzo di pesca
+        btnPesca = new JButton();
+        ImageIcon backIcon = getCardBackIcon(CARD_WIDTH, CARD_HEIGHT);
+        if (backIcon != null) {
+            btnPesca.setIcon(backIcon);
+            pulisciBottone(btnPesca);
+        } else {
+            btnPesca.setText("Pesca");
+        }
         btnPesca.addActionListener(this::azionePesca);
         centro.add(btnPesca);
         add(centro, BorderLayout.CENTER);
 
-        // ── ZONA IN BASSO: current player's hand ──
-        pannelloMano = new JPanel(new FlowLayout());
-        add(pannelloMano, BorderLayout.SOUTH);
+        // --- ZONA IN BASSO: Mano del Giocatore Corrente ---
+        JPanel sudPanel = new JPanel(new BorderLayout());
+        sudPanel.setOpaque(false);
+        
+        labelTurno = new JLabel("Turno: --", SwingConstants.CENTER);
+        labelTurno.setFont(new Font("Arial", Font.BOLD, 20));
+        labelTurno.setForeground(Color.WHITE);
+        sudPanel.add(labelTurno, BorderLayout.NORTH);
 
-        // ── ZONA NORD, OVEST, EST: opponent panels ──
-        panelNorth = new JPanel();
-        panelNorth.setLayout(new BoxLayout(panelNorth, BoxLayout.Y_AXIS));
-        add(panelNorth, BorderLayout.NORTH);
+        pannelloMano = new JPanel(new FlowLayout(FlowLayout.CENTER, -10, 10)); // Gap negativo per sovrapporre leggermente le carte
+        pannelloMano.setOpaque(false);
+        sudPanel.add(pannelloMano, BorderLayout.CENTER);
+        add(sudPanel, BorderLayout.SOUTH);
 
-        panelWest = new JPanel();
-        panelWest.setLayout(new BoxLayout(panelWest, BoxLayout.Y_AXIS));
-        add(panelWest, BorderLayout.WEST);
-
-        panelEast = new JPanel();
-        panelEast.setLayout(new BoxLayout(panelEast, BoxLayout.Y_AXIS));
-        add(panelEast, BorderLayout.EAST);
-
-        // ── ZONA DESTRA: log + turn display + extra buttons ──
+        // --- ZONA DESTRA: Storico e Azioni ---
         JPanel pannelloDestro = new JPanel(new BorderLayout());
-
-        labelTurno = new JLabel("Turno: --");
-        pannelloDestro.add(labelTurno, BorderLayout.NORTH);
+        pannelloDestro.setBorder(new EmptyBorder(10, 10, 10, 10));
+        pannelloDestro.setOpaque(false);
 
         areaStorico = new JTextArea(15, 20);
         areaStorico.setEditable(false);
@@ -102,153 +87,38 @@ public class GamePanel extends JPanel {
         JScrollPane scrollStorico = new JScrollPane(areaStorico);
         pannelloDestro.add(scrollStorico, BorderLayout.CENTER);
 
-        JPanel bottoniDestra = new JPanel(new GridLayout(2, 1));
+        JPanel bottoniDestra = new JPanel(new GridLayout(2, 1, 0, 5));
+        bottoniDestra.setOpaque(false);
         JButton btnUno = new JButton("Dichiara UNO!");
         btnUno.addActionListener(this::azioneDichiaraUno);
         JButton btnSalva = new JButton("Salva Partita");
         btnSalva.addActionListener(this::azioneSalva);
         bottoniDestra.add(btnUno);
         bottoniDestra.add(btnSalva);
+
         pannelloDestro.add(bottoniDestra, BorderLayout.SOUTH);
         add(pannelloDestro, BorderLayout.EAST);
 
-        // ── OVERLAY per hotseat passaggio ──
-        overlayPassaggio = new JPanel(new BorderLayout());
-        overlayPassaggio.setBackground(new Color(0, 0, 0, 200));
-        overlayPassaggio.setVisible(false);
-        JLabel labelOverlay = new JLabel("Passa il dispositivo");
-        labelOverlay.setForeground(Color.WHITE);
-        labelOverlay.setFont(new Font("SansSerif", Font.BOLD, 24));
-        labelOverlay.setHorizontalAlignment(SwingConstants.CENTER);
-        overlayPassaggio.add(labelOverlay, BorderLayout.CENTER);
-        overlayPassaggio.addMouseListener(new MouseAdapter() {
+        overlay = new JPanel(new GridBagLayout());
+        overlay.setBackground(new Color(0, 0, 0, 200));
+        overlay.setVisible(false);
+        overlay.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (controller != null) {
-                    controller.confermaPassaggio();
-                }
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (controller != null) controller.confermaPassaggio();
             }
         });
+
+        labelTransizione = new JLabel();
+        labelTransizione.setFont(new Font("Arial", Font.BOLD, 24));
+        labelTransizione.setForeground(Color.WHITE);
+        overlay.add(labelTransizione);
+        add(overlay, BorderLayout.CENTER);
     }
 
-    /** Called by MainFrame to inject the GameController. */
     public void setController(GameController controller) {
         this.controller = controller;
     }
-
-    // ────────────────────────────────────────────
-    //  Hotseat overlay
-    // ────────────────────────────────────────────
-
-    public void mostraTransizionePassaggio(String nomeGiocatore) {
-        for (var comp : overlayPassaggio.getComponents()) {
-            if (comp instanceof JLabel label) {
-                label.setText("Passa il dispositivo a " + nomeGiocatore
-                        + " \u2014 Clicca per rivelare le carte");
-                label.revalidate();
-            }
-        }
-        mainFrame.getLayeredPane().add(overlayPassaggio, JLayeredPane.PALETTE_LAYER);
-        overlayPassaggio.setBounds(0, 0, mainFrame.getWidth(), mainFrame.getHeight());
-        overlayPassaggio.setVisible(true);
-        overlayPassaggio.revalidate();
-        overlayPassaggio.repaint();
-    }
-
-    public void nascondiTransizione() {
-        overlayPassaggio.setVisible(false);
-        mainFrame.getLayeredPane().remove(overlayPassaggio);
-        mainFrame.getLayeredPane().revalidate();
-        mainFrame.getLayeredPane().repaint();
-    }
-
-    // ────────────────────────────────────────────
-    //  Opponent panels
-    // ────────────────────────────────────────────
-
-    public void aggiornaOpponenti(Partita partita) {
-        panelNorth.removeAll();
-        panelWest.removeAll();
-        panelEast.removeAll();
-
-        Giocatore[] giocatori = partita.getGiocatori();
-        Giocatore corrente = partita.getGiocatoreCorrente();
-        int numGiocatori = giocatori.length;
-        int numOpponenti = numGiocatori - 1;
-
-        if (numOpponenti <= 0) {
-            panelNorth.revalidate(); panelNorth.repaint();
-            panelWest.revalidate();  panelWest.repaint();
-            panelEast.revalidate();  panelEast.repaint();
-            return;
-        }
-
-        int oppos[] = new int[numOpponenti];
-        int idx = 0;
-        for (int i = 0; i < numGiocatori; i++) {
-            if (giocatori[i] != corrente) {
-                oppos[idx++] = i;
-            }
-        }
-
-        // panels[0]=NORTH  panels[1]=EAST  panels[2]=WEST
-        int alloc[] = new int[3];
-        alloc[0] = alloc[1] = alloc[2] = 0;
-        switch (numOpponenti) {
-            case 1 -> alloc[0] = 1;
-            case 2 -> alloc[0] = 2;
-            case 3 -> { alloc[0] = 1; alloc[1] = 1; alloc[2] = 1; }
-            case 4 -> { alloc[0] = 2; alloc[1] = 1; alloc[2] = 1; }
-            case 5 -> { alloc[0] = 2; alloc[1] = 2; alloc[2] = 1; }
-        }
-
-        int pos = 0;
-        for (int i = 0; i < alloc[0]; i++) panelNorth.add(creaPanelAvversario(giocatori[oppos[pos++]]));
-        for (int i = 0; i < alloc[1]; i++) panelEast.  add(creaPanelAvversario(giocatori[oppos[pos++]]));
-        for (int i = 0; i < alloc[2]; i++) panelWest.  add(creaPanelAvversario(giocatori[oppos[pos++]]));
-
-        panelNorth.revalidate(); panelNorth.repaint();
-        panelWest.revalidate();  panelWest.repaint();
-        panelEast.revalidate();  panelEast.repaint();
-    }
-
-    private JPanel creaPanelAvversario(Giocatore g) {
-        JPanel p = new JPanel(new BorderLayout(5, 5));
-
-        JLabel nomeLabel = new JLabel(g.getNome() + (g instanceof GiocatoreBot ? " (BOT)" : ""));
-        nomeLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-        p.add(nomeLabel, BorderLayout.NORTH);
-
-        JPanel cardPanel = new JPanel();
-        int cardCount = g.getMano().getCarte().size();
-        if (cardBackIcon != null) {
-            int displayCount = Math.min(cardCount, 5);
-            cardPanel.setLayout(new GridLayout(1, displayCount, 2, 0));
-            for (int i = 0; i < displayCount; i++) {
-                cardPanel.add(new JLabel(cardBackIcon));
-            }
-            if (cardCount > 5) {
-                JLabel more = new JLabel("+" + (cardCount - 5));
-                more.setHorizontalAlignment(SwingConstants.CENTER);
-                cardPanel.add(more);
-            }
-        } else {
-            JLabel fallback = new JLabel("x " + cardCount);
-            fallback.setHorizontalAlignment(SwingConstants.CENTER);
-            cardPanel.add(fallback);
-        }
-        p.add(cardPanel, BorderLayout.CENTER);
-
-        JLabel countLabel = new JLabel("x " + cardCount);
-        countLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        p.add(countLabel, BorderLayout.SOUTH);
-
-        return p;
-    }
-
-    // ────────────────────────────────────────────
-    //  Action listeners
-    // ────────────────────────────────────────────
 
     private void azionePesca(ActionEvent e) {
         if (controller != null) controller.gestisciClickPesca();
@@ -262,183 +132,173 @@ public class GamePanel extends JPanel {
         if (controller != null) controller.dichiaraUno();
     }
 
-    // ────────────────────────────────────────────
-    //  Public API called by GameController
-    // ────────────────────────────────────────────
-
     public void aggiungiLog(String messaggio) {
         areaStorico.append(messaggio + "\n");
+        areaStorico.setCaretPosition(areaStorico.getDocument().getLength()); // Scrolla giù
     }
 
     public void aggiornaTavolo(Partita partita) {
         this.partitaCorrente = partita;
         Giocatore corrente = partita.getGiocatoreCorrente();
-        Mano manoCorrente    = corrente.getMano();
-        boolean isHuman      = corrente instanceof GiocatoreUmano;
 
-        // ── Discard pile ────────────────────────────────────────────────────────
+        // 1. Aggiorna l'etichetta del turno
+        labelTurno.setText("Turno di: " + corrente.getNome() + (corrente instanceof model.GiocatoreBot ? " (BOT)" : ""));
+
+        // 2. Aggiorna Carta in Gioco (Scarti)
         if (partita.getCartaInGioco() != null) {
-            ImageIcon scartiIcon = getIconForCarta(partita.getCartaInGioco());
-            if (scartiIcon != null) {
-                labelScarti.setIcon(scartiIcon);
+            ImageIcon iconaScarto = getIconForCarta(partita.getCartaInGioco(), CARD_WIDTH, CARD_HEIGHT);
+            if (iconaScarto != null) {
+                labelScarti.setIcon(iconaScarto);
                 labelScarti.setText("");
             } else {
-                labelScarti.setIcon(null);
-                labelScarti.setText("CARTA IN CIMA: " + partita.getCartaInGioco());
+                labelScarti.setText(partita.getCartaInGioco().toString());
             }
-        } else {
-            labelScarti.setIcon(null);
-            labelScarti.setText("CARTA IN CIMA: [Nessuna]");
         }
 
-        // ── Turn label ──
-        labelTurno.setText("Turno: " + corrente.getNome()
-                + (corrente instanceof GiocatoreBot ? " (BOT)" : ""));
-
-        // ── Opponent panels ──
-        aggiornaOpponenti(partita);
-
-        // ── Hand panel ──
+        // 3. Aggiorna Mano del Giocatore Corrente
         pannelloMano.removeAll();
-        List<Carta> carte = manoCorrente.getCarte();
-
+        java.util.List<Carta> carte = corrente.getMano().getCarte();
         for (int i = 0; i < carte.size(); i++) {
             Carta c = carte.get(i);
-            JButton btn;
-
-            if (isHuman) {
-                // Human sees actual card images; only playable cards get a listener
-                ImageIcon icon = getIconForCarta(c);
-                if (icon != null) {
-                    btn = new JButton(icon);
-                } else {
-                    btn = new JButton(c.toString());
-                }
-                btn.setContentAreaFilled(false);
-                btn.setBorderPainted(false);
-                btn.setFocusPainted(false);
-
-                boolean valida = partita.isMossaValida(c);
-                btn.setEnabled(valida);
-
-                if (valida) {
-                    final int indice = i;
-                    btn.addActionListener(ev -> giocaCarta(indice));
-                }
+            JButton btn = new JButton();
+            ImageIcon iconaCarta = getIconForCarta(c, CARD_WIDTH, CARD_HEIGHT);
+            
+            if (iconaCarta != null) {
+                btn.setIcon(iconaCarta);
+                pulisciBottone(btn);
             } else {
-                // Bot's turn → show card back, never clickable
-                if (cardBackIcon != null) {
-                    btn = new JButton(cardBackIcon);
-                } else {
-                    btn = new JButton("?");
-                }
-                btn.setEnabled(false);
-                btn.setContentAreaFilled(false);
-                btn.setBorderPainted(false);
-                btn.setFocusPainted(false);
+                btn.setText(c.toString()); // Fallback testuale
             }
 
+            final int indice = i;
+            boolean valida = partita.isMossaValida(c);
+            btn.setEnabled(valida);
+            if (valida) {
+                btn.addActionListener(ev -> giocaCarta(indice));
+                btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            }
             pannelloMano.add(btn);
         }
 
-        pannelloMano.revalidate();
-        pannelloMano.repaint();
+        // 4. Aggiorna Avversari (Carte Coperte)
+        pannelloAvversari.removeAll();
+        for (Giocatore g : partita.getGiocatori()) {
+            if (g != corrente) {
+                JPanel oppPanel = new JPanel(new BorderLayout());
+                oppPanel.setOpaque(false);
+                
+                JLabel nameLabel = new JLabel(g.getNome() + " (" + g.getMano().getCarte().size() + ")");
+                nameLabel.setForeground(Color.WHITE);
+                nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                
+                // Disegna i piccoli dorsi sovrapposti
+                JPanel miniCardsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, -15, 0));
+                miniCardsPanel.setOpaque(false);
+                ImageIcon miniBack = getCardBackIcon(SMALL_CARD_WIDTH, SMALL_CARD_HEIGHT);
+                
+                for (int i = 0; i < g.getMano().getCarte().size(); i++) {
+                    JLabel miniCard = new JLabel(miniBack != null ? miniBack : new ImageIcon());
+                    if (miniBack == null) miniCard.setText("[X]");
+                    miniCardsPanel.add(miniCard);
+                }
+                
+                oppPanel.add(nameLabel, BorderLayout.NORTH);
+                oppPanel.add(miniCardsPanel, BorderLayout.CENTER);
+                pannelloAvversari.add(oppPanel);
+            }
+        }
+
+        revalidate();
+        repaint();
     }
 
     public void mostraErrore(String messaggio) {
         JOptionPane.showMessageDialog(this, messaggio, "Errore", JOptionPane.ERROR_MESSAGE);
     }
 
-    // ────────────────────────────────────────────
-    //  Delegates
-    // ────────────────────────────────────────────
-
     private void giocaCarta(int indiceCarta) {
-        if (controller != null) {
-            controller.gestisciClickCarta(indiceCarta);
-        }
-    }
-    private void pescaCarta() {
-        if (controller != null) {
-            controller.gestisciClickPesca();
-        }
+        if (controller != null) controller.gestisciClickCarta(indiceCarta);
     }
 
-    // ────────────────────────────────────────────
-    //  Image helper
-    // ────────────────────────────────────────────
+    // --- METODI UTILITY PER LE IMMAGINI ---
 
-    /**
-     * Maps a {@link Carta} to the correct image file inside {@code /UnoCards/}.
-     *
-     * <p>Mapping rules (based on {@code Carta.tipo} — highest priority):
-     * <ul>
-     *   <li>tipo 4 → &quot;wild_card.png&quot; in the wild/ folder</li>
-     *   <li>tipo 5 → &quot;4_plus.png&quot; in the wild/ folder</li>
-     *   <li>tipo 0 → &quot;{numero}_{colore}.png&quot; in the colour folder</li>
-     *   <li>tipo 1 → &quot;2plus_{colore}.png&quot;</li>
-     *   <li>tipo 2 → &quot;inverse_{colore}.png&quot;</li>
-     *   <li>tipo 3 → &quot;block_{colore}.png&quot;</li>
-     * </ul>
-     * All images are scaled to {@link #CARD_WIDTH}×{@link #CARD_HEIGHT}.
-      * Returns {@code null} if the image cannot be found (caller should show text fallback).
-      */
-    private ImageIcon getIconForCarta(Carta c) {
-        if (c == null) return null;
+    private void pulisciBottone(JButton btn) {
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+    }
 
-        try {
-            int colore = c.getColore();
-            int tipo   = c.getTipo();
-            int numero = c.getNumero();
+    private ImageIcon getIconForCarta(Carta c, int w, int h) {
+        String colorFolder = "";
+        String fileName = "";
 
-            String fileName;
-
-            if (tipo == 4) {
-                // Wild: use colour-specific image if a colour has already been
-                // chosen (colore 0-3), otherwise use the base image.
-                if (colore >= 0 && colore <= 3) {
-                    fileName = "wild_card_" + COLORE_NOMI[colore] + ".png";
-                } else {
-                    fileName = "wild_card.png";
-                }
-            } else if (tipo == 5) {
-                // +4: same logic
-                if (colore >= 0 && colore <= 3) {
-                    fileName = "4_plus_" + COLORE_NOMI[colore] + ".png";
-                } else {
-                    fileName = "4_plus.png";
-                }
-            } else if (colore >= 0 && colore < COLORE_NOMI.length) {
-                String col = COLORE_NOMI[colore];
-                switch (tipo) {
-                    case 0 -> fileName = numero + "_" + col + ".png";
-                    case 1 -> fileName = "2plus_"   + col + ".png";
-                    case 2 -> fileName = "inverse_" + col + ".png";
-                    case 3 -> fileName = "block_"   + col + ".png";
-                    default -> { return null; }
-                }
-            } else {
-                return null;
-            }
-
-            String resourcePath = IMG_PATH_BASE
-                    + (tipo >= 4 ? "wild" : COLORE_NOMI[colore])
-                    + "/" + fileName;
-            java.net.URL imgURL = GamePanel.class.getResource(resourcePath);
-            if (imgURL == null) {
-                System.err.println("Image NOT FOUND: " + resourcePath
-                        + "  [tipo=" + tipo + " colore=" + colore + " numero=" + numero + "]");
-                return null;
-            }
-
-            Image img = new ImageIcon(imgURL).getImage();
-            Image scaled = img.getScaledInstance(CARD_WIDTH, CARD_HEIGHT, Image.SCALE_SMOOTH);
-            return new ImageIcon(scaled);
-
-        } catch (Exception e) {
-            System.err.println("Error loading card image:");
-            e.printStackTrace();
-            return null;
+        // Mappatura colore
+        switch (c.getColore()) {
+            case 0: colorFolder = "red"; break;
+            case 1: colorFolder = "yellow"; break;
+            case 2: colorFolder = "green"; break;
+            case 3: colorFolder = "blue"; break;
+            default: colorFolder = "wild"; break;
         }
+
+        // Mappatura Tipo (0=Normale, 1=+2, 2=Reverse, 3=Skip, 4=Wild, 5=+4)
+        if (c.getTipo() == 0) {
+            fileName = c.getNumero() + "_" + colorFolder + ".png";
+        } else if (c.getTipo() == 1) {
+            fileName = "2plus_" + colorFolder + ".png";
+        } else if (c.getTipo() == 2) {
+            fileName = "inverse_" + colorFolder + ".png";
+        } else if (c.getTipo() == 3) {
+            fileName = "block_" + colorFolder + ".png";
+        } else if (c.getTipo() == 4) {
+            if (c.getColore() == 4) { // Wild colorato
+                colorFolder = "wild";
+                fileName = "wild_card_" + c.getColore() + ".png";
+            } else { // Wild normale
+                colorFolder = "wild";
+                fileName = "wild_card.png";
+            }
+        } else if (c.getTipo() == 5) {
+            if (c.getColore() == 4) { // +4 colorato
+                colorFolder = "wild";
+                fileName = "4_plus_" + c.getColore() + ".png";
+            } else { // +4 normale
+                colorFolder = "wild";
+                fileName = "4_plus_" + c.getColore() + ".png";
+            }
+        }
+
+        String path = "src/UnoCards/" + colorFolder + "/" + fileName;
+        return loadAndScaleImage(path, w, h);
+    }
+
+    private ImageIcon getCardBackIcon(int w, int h) {
+        String path = "src/UnoCards/card back/card_back.png";
+        return loadAndScaleImage(path, w, h);
+    }
+
+    private ImageIcon loadAndScaleImage(String path, int w, int h) {
+        File file = new File(path);
+        if (!file.exists()) {
+            return null; // Ritorna null se il file non esiste per usare il testo di fallback
+        }
+        ImageIcon icon = new ImageIcon(path);
+        Image img = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        return new ImageIcon(img);
+    }
+
+    public void mostraTransizionePassaggio(String nome) {
+        setComponentZOrder(overlay, getComponentCount() - 1);
+        overlay.setVisible(true);
+        labelTransizione.setText(nome + "'s turn - Click to continue");
+        revalidate();
+        repaint();
+    }
+
+    public void nascondiTransizione() {
+        overlay.setVisible(false);
+        revalidate();
+        repaint();
     }
 }
