@@ -22,7 +22,6 @@ public class GamePanel extends JPanel {
     private JLabel labelTurno;
     private Partita partitaCorrente;
 
-    // Dimensioni costanti per le carte
     private final int CARD_WIDTH = 75;
     private final int CARD_HEIGHT = 110;
     private final int SMALL_CARD_WIDTH = 40;
@@ -31,15 +30,12 @@ public class GamePanel extends JPanel {
     public GamePanel(MainFrame frame) {
         this.mainFrame = frame;
         setLayout(new BorderLayout());
-        setBackground(new Color(20, 110, 40)); // Verde tavolo da gioco profondo
+        setBackground(new Color(20, 110, 40)); 
 
-        // --- ZONA NORD: Avversari (Carte coperte) ---
-        // Torniamo al FlowLayout perché l'OpponentHandPanel (in fondo) gestirà l'overlap matematicamente
         pannelloAvversari = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 10));
         pannelloAvversari.setOpaque(false);
         add(pannelloAvversari, BorderLayout.NORTH);
 
-        // --- ZONA CENTRALE: Tavolo da Gioco (Mazzo e Scarti) ---
         JPanel centro = new JPanel(new FlowLayout(FlowLayout.CENTER, 40, 40));
         centro.setOpaque(false);
         
@@ -67,7 +63,6 @@ public class GamePanel extends JPanel {
         centro.add(btnPesca);
         add(centro, BorderLayout.CENTER);
 
-        // --- ZONA IN BASSO: Mano del Giocatore Corrente ---
         JPanel sudPanel = new JPanel(new BorderLayout());
         sudPanel.setOpaque(false);
         
@@ -76,12 +71,11 @@ public class GamePanel extends JPanel {
         labelTurno.setForeground(Color.WHITE);
         sudPanel.add(labelTurno, BorderLayout.NORTH);
 
-        pannelloMano = new JPanel(new FlowLayout(FlowLayout.CENTER, -15, 15)); // Ventaglio leggero
+        pannelloMano = new JPanel(new FlowLayout(FlowLayout.CENTER, -15, 15)); 
         pannelloMano.setOpaque(false);
         sudPanel.add(pannelloMano, BorderLayout.CENTER);
         add(sudPanel, BorderLayout.SOUTH);
 
-       // --- ZONA DESTRA: Storico e Azioni ---
         JPanel pannelloDestro = new JPanel(new BorderLayout());
         pannelloDestro.setBorder(new EmptyBorder(10, 10, 10, 10));
         pannelloDestro.setOpaque(false);
@@ -90,16 +84,14 @@ public class GamePanel extends JPanel {
         areaStorico.setEditable(false);
         areaStorico.setFont(new Font("Monospaced", Font.PLAIN, 12));
 
-        // Aumentato a 4 righe per fare spazio al nuovo bottone
         JPanel bottoniDestra = new JPanel(new GridLayout(4, 1, 0, 8)); 
         bottoniDestra.setOpaque(false);
         
         JButton btnUno = new JButton("Dichiara UNO!");
         btnUno.addActionListener(e -> { if (controller != null) controller.dichiaraUno(); });
         
-        // NUOVO PULSANTE PENALITÀ
         JButton btnPenalizza = new JButton("Penalizza (No UNO)");
-        btnPenalizza.setBackground(new Color(200, 50, 50)); // Rosso scuro per evidenziarlo
+        btnPenalizza.setBackground(new Color(200, 50, 50)); 
         btnPenalizza.setForeground(Color.WHITE);
         btnPenalizza.addActionListener(e -> { if (controller != null) controller.penalizza(); });
 
@@ -116,7 +108,7 @@ public class GamePanel extends JPanel {
         });
 
         bottoniDestra.add(btnUno);
-        bottoniDestra.add(btnPenalizza); // Inserito qui
+        bottoniDestra.add(btnPenalizza); 
         bottoniDestra.add(btnSalva);
         bottoniDestra.add(btnMostraLog);
 
@@ -151,7 +143,6 @@ public class GamePanel extends JPanel {
 
         labelTurno.setText("Turno di: " + corrente.getNome() + (corrente instanceof model.GiocatoreBot ? " (BOT)" : ""));
 
-        // 1. Aggiorna Pila Scarti
         if (partita.getCartaInGioco() != null) {
             ImageIcon iconaScarto = getIconForCarta(partita.getCartaInGioco(), CARD_WIDTH, CARD_HEIGHT);
             if (iconaScarto != null) {
@@ -165,7 +156,6 @@ public class GamePanel extends JPanel {
             }
         }
 
-       // 2. Aggiorna Mano Giocatore (Nasconde le carte se è il turno del Bot)
         pannelloMano.removeAll();
         java.util.List<Carta> carte = corrente.getMano().getCarte();
         boolean isBotTurn = corrente instanceof model.GiocatoreBot;
@@ -176,7 +166,6 @@ public class GamePanel extends JPanel {
             btn.setPreferredSize(new Dimension(CARD_WIDTH, CARD_HEIGHT));
             
             if (isBotTurn) {
-                // Durante il turno del bot, mostra il dorso delle carte in basso
                 ImageIcon iconaDorso = getCardBackIcon(CARD_WIDTH, CARD_HEIGHT);
                 if (iconaDorso != null) {
                     btn.setIcon(iconaDorso);
@@ -185,9 +174,8 @@ public class GamePanel extends JPanel {
                     btn.setText("UNO");
                     btn.setBackground(Color.DARK_GRAY);
                 }
-                btn.setEnabled(false); // Blocca i click dell'umano!
+                btn.setEnabled(false); 
             } else {
-                // Durante il turno umano, mostra le carte vere
                 ImageIcon iconaCarta = getIconForCarta(c, CARD_WIDTH, CARD_HEIGHT);
                 if (iconaCarta != null) {
                     btn.setIcon(iconaCarta);
@@ -199,32 +187,25 @@ public class GamePanel extends JPanel {
 
                 final int indice = i;
                 boolean valida = partita.isMossaValida(c);
-                btn.setEnabled(valida); // Solo le carte giocabili sono abilitate
+                btn.setEnabled(valida); 
                 if (valida) {
                     btn.addActionListener(ev -> giocaCarta(indice));
                     btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                    // Evidenzia le carte giocabili con un bordo verde
                     btn.setBorder(BorderFactory.createLineBorder(Color.GREEN, 2));
                 } else {
-                    // Le carte non giocabili mostrano un messaggio se si clicca
-                    btn.addActionListener(ev -> {
-                        // Non fare nulla, l'utente deve pescare
-                    });
+                    btn.addActionListener(ev -> { });
                     btn.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
                 }
             }
             pannelloMano.add(btn);
         }
         
-        // Blocca anche il bottone "PESCA" se tocca al Bot
         btnPesca.setEnabled(!isBotTurn);
 
-        // 3. Aggiorna Avversari (Esclude i bot dalla renderizzazione grafica delle carte)
         pannelloAvversari.removeAll();
         for (Giocatore g : partita.getGiocatori()) {
             if (g != corrente) {
                 if (g instanceof model.GiocatoreBot) {
-                    // Se è un BOT, mostriamo solo una scritta semplice senza mazzo grafico di carte coperte
                     JPanel botPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
                     botPanel.setOpaque(false);
                     JLabel labelBot = new JLabel(g.getNome() + " (BOT) - Carte: " + g.getMano().getCarte().size());
@@ -233,7 +214,6 @@ public class GamePanel extends JPanel {
                     botPanel.add(labelBot);
                     pannelloAvversari.add(botPanel);
                 } else {
-                    // Se è un umano reale avversario, usiamo il pannello matematico anti-clipping
                     OpponentHandPanel oppPanel = new OpponentHandPanel(
                         g.getNome(), 
                         g.getMano().getCarte().size(), 
@@ -243,6 +223,10 @@ public class GamePanel extends JPanel {
                 }
             }
         }
+        
+        // QUESTE DUE RIGHE MANCAVANO. SENZA DI QUESTE LA GUI SI CONGELA E I CLICK VANNO A VUOTO!
+        revalidate();
+        repaint();
     }
 
     public void mostraErrore(String messaggio) {
@@ -259,8 +243,6 @@ public class GamePanel extends JPanel {
         btn.setFocusPainted(false);
         btn.setMargin(new Insets(0, 0, 0, 0));
     }
-
-    // --- LOGICA OVERLAY (GlassPane) A PROVA DI CRASH ---
 
     public void mostraTransizionePassaggio(String nome) {
         JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
@@ -284,10 +266,8 @@ public class GamePanel extends JPanel {
         glassPane.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                // LA VERA SOLUZIONE AL BLOCCO: 
-                // Invece di nascondere solo la grafica, avvisiamo il controller!
                 if (controller != null) {
-                    controller.confermaPassaggio(); // Questo rimette inTransizione = false e riattiva le carte!
+                    controller.confermaPassaggio(); 
                 } else {
                     nascondiTransizione();
                 }
@@ -303,16 +283,11 @@ public class GamePanel extends JPanel {
         if (topFrame != null) {
             Component glass = topFrame.getGlassPane();
             glass.setVisible(false);
-            
-            // LA VERA FIX: Sostituiamo il glass pane con uno nuovo, vuoto e senza listener.
-            // Questo garantisce che il mouse venga "liberato" e i bottoni tornino cliccabili.
             JPanel emptyGlass = new JPanel();
             emptyGlass.setOpaque(false);
             topFrame.setGlassPane(emptyGlass);
         }
     }
-
-    // --- LOGICA IMMAGINI ---
 
     private ImageIcon getIconForCarta(Carta c, int w, int h) {
         String colorFolder = "";
@@ -375,11 +350,23 @@ public class GamePanel extends JPanel {
                 return new ImageIcon(new ImageIcon(file.getAbsolutePath()).getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH));
             }
         }
-        System.out.println("⚠️ IMMAGINE MANCANTE: " + relativePath);
         return null;
     }
+    // --- NUOVA FEATURE: Illumina mano per scelta colore ---
+    public void illuminaTutteLeCarte() {
+        for (Component c : pannelloMano.getComponents()) {
+            if (c instanceof JButton) {
+                JButton btn = (JButton) c;
+                btn.setEnabled(true); // Riaccende tutti i colori
+                // Mettiamo un bordino speciale azzurro per far capire che stiamo consultando la mano
+                btn.setBorder(BorderFactory.createLineBorder(new Color(50, 150, 255), 2)); 
+            }
+        }
+        // COMANDO CRUCIALE: Forza Java a dipingere i colori sullo schermo ISTANTANEAMENTE,
+        // scavalcando la coda grafica prima che il popup di scelta colore blocchi tutto.
+        pannelloMano.paintImmediately(0, 0, pannelloMano.getWidth(), pannelloMano.getHeight());
+    }
 
-    // --- CLASSE INTERNA ANTI-CLIPPING PER GLI AVVERSARI ---
     class OpponentHandPanel extends JPanel {
         private String name;
         private int numCards;
@@ -392,7 +379,6 @@ public class GamePanel extends JPanel {
             this.numCards = numCards;
             this.cardBack = cardBack;
             setOpaque(false);
-            // La Bounding Box perfetta: larga 180px, alta il necessario per testo e carte.
             setPreferredSize(new Dimension(180, cardH + 35)); 
         }
 
@@ -402,7 +388,6 @@ public class GamePanel extends JPanel {
             Graphics2D g2d = (Graphics2D) g;
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // 1. Disegna il Nome e il Numero di carte in alto e centrato
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 14));
             FontMetrics fm = g2d.getFontMetrics();
@@ -410,26 +395,18 @@ public class GamePanel extends JPanel {
             int textX = (getWidth() - fm.stringWidth(text)) / 2;
             g2d.drawString(text, textX, 15);
 
-            // 2. Disegna le carte con l'algoritmo di spacing dinamico
             if (cardBack != null && numCards > 0) {
                 int startY = 25;
-                
-                // Lasciamo un piccolo margine laterale (10px in totale)
                 int maxAvailableWidth = getWidth() - 10; 
-                // Spazio che divide una carta dall'altra
                 int stepX = maxAvailableWidth - cardW;
                 
                 if (numCards > 1) {
                     stepX = (maxAvailableWidth - cardW) / (numCards - 1);
                 }
                 
-                // Mettiamo un tetto massimo alla distanza: se ha poche carte non devono stare troppo larghe
                 if (stepX > 25) stepX = 25; 
                 
-                // Calcoliamo esattamente quanto spazio prenderà l'intero ventaglio
                 int totalWidthUsed = cardW + (numCards - 1) * stepX;
-                
-                // E lo posizioniamo al centro esatto della Bounding Box
                 int startX = (getWidth() - totalWidthUsed) / 2;
 
                 for (int i = 0; i < numCards; i++) {

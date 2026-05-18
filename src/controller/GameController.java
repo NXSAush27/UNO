@@ -11,6 +11,7 @@ public class GameController {
     private MainFrame mainFrame;
     private boolean inTransizione = false;
 
+    // Variabili per il sistema "Dichiara UNO" e "Penalizza"
     private boolean unoDichiaratoInAnticipo = false;
     private Giocatore giocatoreVulnerabile = null;
 
@@ -43,16 +44,6 @@ public class GameController {
             Giocatore corrente = partita.getGiocatoreCorrente();
             if (corrente instanceof GiocatoreBot) return;
 
-            // Se il giocatore umano è stato bloccato, consuma il flag e passa il turno
-            if (corrente.isHaSaltato()) {
-                corrente.setHaSaltato(false);
-                gamePanel.aggiungiLog("⏭️ Sei stato bloccato! Passi il turno.");
-                partita.passaTurno();
-                gamePanel.aggiornaTavolo(partita);
-                controllaTurnoBot();
-                return;
-            }
-
             if (indiceCarta < 0 || indiceCarta >= corrente.getMano().getCarte().size()) return;
             Carta cartaScelta = corrente.getMano().get(indiceCarta);
 
@@ -62,6 +53,14 @@ public class GameController {
                 }
 
                 int cartePrima = corrente.getMano().getCarte().size();
+
+                // --- FEATURE ILLUMINA MANO ---
+                // Se la carta è un Jolly (4) o un +4 (5), accendi tutta la mano prima di bloccare lo schermo!
+                if (cartaScelta.getTipo() == 4 || cartaScelta.getTipo() == 5) {
+                    gamePanel.illuminaTutteLeCarte();
+                }
+                // -----------------------------
+
                 partita.giocaCarta(corrente, cartaScelta);
                 gamePanel.aggiungiLog(corrente.getNome() + " ha giocato: " + cartaScelta);
 
@@ -81,10 +80,9 @@ public class GameController {
                 partita.passaTurno();
                 Giocatore next = partita.getGiocatoreCorrente();
 
+                // Questo aggiornaTavolo finale resetterà automaticamente la mano, 
+                // re-ingrigendo le carte non giocabili in base al colore che hai appena scelto!
                 gamePanel.aggiornaTavolo(partita);
-                
-                // --- RESET BRUTO ANTI-BLOCCO ---
-                // Sblocca preventivamente i click per prevenire freeze della UI
                 inTransizione = false; 
 
                 if (next instanceof GiocatoreUmano && currentWasHuman && corrente != next) {
@@ -93,12 +91,8 @@ public class GameController {
                     return;
                 }
 
-                // Se hai bloccato l'avversario e tocca di nuovo a te, FERMA TUTTO e aspetta il tuo click.
                 if (corrente == next && currentWasHuman) {
                     gamePanel.aggiungiLog("🔄 HAI BLOCCATO L'AVVERSARIO! Se non hai carte giocabili, clicca PESCA.");
-                    gamePanel.aggiornaTavolo(partita); // Aggiorna i bottoni!
-                    gamePanel.repaint(); // Forza il ridisegno
-                    gamePanel.revalidate(); // Ricalcola il layout
                     return; 
                 }
 
@@ -119,16 +113,6 @@ public class GameController {
             Giocatore corrente = partita.getGiocatoreCorrente();
             if (corrente instanceof GiocatoreBot) return; 
 
-            // Se il giocatore umano è stato bloccato, consuma il flag e passa il turno
-            if (corrente.isHaSaltato()) {
-                corrente.setHaSaltato(false);
-                gamePanel.aggiungiLog("⏭️ Sei stato bloccato! Passi il turno.");
-                partita.passaTurno();
-                gamePanel.aggiornaTavolo(partita);
-                controllaTurnoBot();
-                return;
-            }
-
             if (giocatoreVulnerabile != null && giocatoreVulnerabile != corrente) {
                 giocatoreVulnerabile = null;
             }
@@ -144,6 +128,12 @@ public class GameController {
                         "Colpo di Fortuna! ⚡",
                         JOptionPane.INFORMATION_MESSAGE);
                 
+                // --- FEATURE ILLUMINA MANO ---
+                if (pescata.getTipo() == 4 || pescata.getTipo() == 5) {
+                    gamePanel.illuminaTutteLeCarte();
+                }
+                // -----------------------------
+
                 partita.giocaCarta(corrente, pescata);
                 gamePanel.aggiungiLog("⚡ " + corrente.getNome() + " ha pescato e giocato subito: " + pescata);
 
@@ -184,22 +174,24 @@ public class GameController {
         Giocatore corrente = partita.getGiocatoreCorrente();
         if (corrente instanceof GiocatoreBot) return;
 
-        partita.SegnalaUno(corrente);
         int carteInMano = corrente.getMano().getCarte().size();
 
+        // FIX FIX FIX: Modificata la gestione per rispecchiare la logica a 2 carte
         if (carteInMano == 2) {
+            corrente.setDettoUno(true); // Imposta direttamente il flag per Partita.java senza innescare la penalità
             unoDichiaratoInAnticipo = true;
             gamePanel.aggiungiLog(corrente.getNome() + " ha pre-dichiarato UNO!");
         } else if (carteInMano == 1) {
+            partita.SegnalaUno(corrente);
             if (giocatoreVulnerabile == corrente) {
                 giocatoreVulnerabile = null; 
-                gamePanel.aggiungiLog(corrente.getNome() + " si è salvato urlando UNO!");
-            } else {
-                gamePanel.aggiungiLog(corrente.getNome() + " ha dichiarato UNO!");
             }
+            gamePanel.aggiungiLog(corrente.getNome() + " ha dichiarato UNO!");
         } else {
-            gamePanel.aggiungiLog(corrente.getNome() + " ha urlato UNO a vuoto...");
+            partita.SegnalaUno(corrente); // Penalità automatica se premuto con troppe carte
+            gamePanel.aggiungiLog(corrente.getNome() + " ha urlato UNO a vuoto ed è stato penalizzato.");
         }
+        gamePanel.aggiornaTavolo(partita);
     }
 
     public void penalizza() {
@@ -263,71 +255,58 @@ public class GameController {
         Giocatore corrente = partita.getGiocatoreCorrente();
 
         if (corrente instanceof GiocatoreBot) {
-            try {
-                // Se il bot è stato bloccato, salta il turno e passa al prossimo
-                if (corrente.isHaSaltato()) {
-                    gamePanel.aggiungiLog("🔄 " + corrente.getNome() + " (BOT) è stato bloccato e salta il turno!");
-                    corrente.setHaSaltato(false);
+            javax.swing.Timer timer = new javax.swing.Timer(1500, e -> {
+                try {
+                    if (giocatoreVulnerabile != null && giocatoreVulnerabile != corrente) {
+                        giocatoreVulnerabile = null;
+                    }
+
+                    int cartePrima = corrente.getMano().getCarte().size();
+                    Carta mossa = ((GiocatoreBot) corrente).decidiMossa(partita);
+                    
+                    if (mossa != null && partita.isMossaValida(mossa)) {
+                        partita.giocaCarta(corrente, mossa);
+                        gamePanel.aggiungiLog(corrente.getNome() + " (BOT) ha giocato: " + mossa);
+                        
+                        if (cartePrima == 2) {
+                            partita.SegnalaUno(corrente); 
+                            gamePanel.aggiungiLog(corrente.getNome() + " (BOT) ha dichiarato UNO!");
+                        }
+                    } else {
+                        partita.pescaCarta(corrente);
+                        Carta pescata = corrente.getMano().getCarte().get(corrente.getMano().getCarte().size() - 1);
+                        if (partita.isMossaValida(pescata)) {
+                            partita.giocaCarta(corrente, pescata);
+                            gamePanel.aggiungiLog("⚡ " + corrente.getNome() + " (BOT) ha pescato e giocato subito: " + pescata);
+                        } else {
+                            gamePanel.aggiungiLog(corrente.getNome() + " (BOT) ha pescato e passa.");
+                        }
+                    }
+
+                    if (partita.verificaVittoria(corrente)) { 
+                        mostraVittoria(corrente);
+                        return;
+                    }
+                    
                     partita.passaTurno();
                     gamePanel.aggiornaTavolo(partita);
-                    gamePanel.revalidate();
-                    gamePanel.repaint();
+                    
                     Giocatore next = partita.getGiocatoreCorrente();
-                    if (next instanceof GiocatoreBot) {
+                    
+                    if (corrente == next) {
+                        gamePanel.aggiungiLog("🔄 " + corrente.getNome() + " (BOT) gioca di nuovo!");
+                        controllaTurnoBot();
+                    } else if (next instanceof GiocatoreBot) {
                         controllaTurnoBot();
                     }
-                    return;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    partita.passaTurno();
+                    gamePanel.aggiornaTavolo(partita);
                 }
-
-                if (giocatoreVulnerabile != null && giocatoreVulnerabile != corrente) {
-                    giocatoreVulnerabile = null;
-                }
-
-                int cartePrima = corrente.getMano().getCarte().size();
-                Carta mossa = ((GiocatoreBot) corrente).decidiMossa(partita);
-                
-                if (mossa != null && partita.isMossaValida(mossa)) {
-                    partita.giocaCarta(corrente, mossa);
-                    gamePanel.aggiungiLog(corrente.getNome() + " (BOT) ha giocato: " + mossa);
-                    
-                    if (cartePrima == 2) {
-                        partita.SegnalaUno(corrente); 
-                        gamePanel.aggiungiLog(corrente.getNome() + " (BOT) ha dichiarato UNO!");
-                    }
-                } else {
-                    partita.pescaCarta(corrente);
-                    Carta pescata = corrente.getMano().getCarte().get(corrente.getMano().getCarte().size() - 1);
-                    if (partita.isMossaValida(pescata)) {
-                        partita.giocaCarta(corrente, pescata);
-                        gamePanel.aggiungiLog("⚡ " + corrente.getNome() + " (BOT) ha pescato e giocato subito: " + pescata);
-                    } else {
-                        gamePanel.aggiungiLog(corrente.getNome() + " (BOT) ha pescato e passa.");
-                    }
-                }
-
-                if (partita.verificaVittoria(corrente)) { 
-                    mostraVittoria(corrente);
-                    return;
-                }
-                
-                partita.passaTurno();
-                gamePanel.aggiornaTavolo(partita);
-                gamePanel.revalidate();
-                gamePanel.repaint();
-                
-                Giocatore next = partita.getGiocatoreCorrente();
-                
-                if (corrente == next) {
-                    gamePanel.aggiungiLog("🔄 " + corrente.getNome() + " (BOT) gioca di nuovo!");
-                    controllaTurnoBot();
-                } else if (next instanceof GiocatoreBot) {
-                    controllaTurnoBot();
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                partita.passaTurno();
-                gamePanel.aggiornaTavolo(partita);
-            }
+            });
+            timer.setRepeats(false);
+            timer.start();
         }
     }
 }

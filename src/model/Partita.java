@@ -148,7 +148,24 @@ public class Partita implements Serializable {
     }
 
     public void pescaCarta(Giocatore giocatore) {
-        if (mazzo.getCarte().size() > 0) {
+        // SISTEMA DI RICARICA MAZZO AUTOMATICA
+        if (mazzo.getCarte().isEmpty()) {
+            if (pilascarti.isEmpty()) {
+                System.out.println("Mazzo e scarti vuoti! Nessuna carta disponibile.");
+                return; // Evita crash nei rarissimi casi in cui tutte le 108 carte sono in mano
+            }
+            
+            // Travasa tutti gli scarti nel mazzo vuoto
+            mazzo.getCarte().addAll(pilascarti);
+            pilascarti.clear(); // Svuota gli scarti (cartaInGioco rimane intatta sul tavolo)
+            
+            // Rimescola il nuovo mazzo
+            java.util.Collections.shuffle(mazzo.getCarte());
+            System.out.println("🔄 IL MAZZO È FINITO: Gli scarti sono stati rimescolati per formare un nuovo mazzo!");
+        }
+
+        // Procedura standard di pescaggio
+        if (!mazzo.getCarte().isEmpty()) {
             Carta cartaPescata = mazzo.getCarte().get(0);
             giocatore.aggiungiCarta(cartaPescata);
             System.out.println(giocatore.getNome() + " ha pescato: " + cartaPescata.toString());
@@ -287,8 +304,9 @@ public class Partita implements Serializable {
     }
 
     public void penalizzaGiocatore(Giocatore giocatore) {
-        giocatore.aggiungiCarta(mazzo.getCarte().get(0));
-        mazzo.getCarte().remove(0);
+        // Sfruttiamo pescaCarta così abbiamo la ricarica del mazzo in automatico
+        pescaCarta(giocatore);
+        pescaCarta(giocatore); // La penalità ufficiale dell'UNO è di 2 carte
     }
 
     public void gestisciTurno(Giocatore giocatore) {
