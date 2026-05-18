@@ -1,42 +1,23 @@
 package utils;
 
-import view.MainFrame;
-import controller.GameController;
-import javax.swing.*;
+import javax.swing.JOptionPane;
 
 public class App {
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            MainFrame frame = new MainFrame();
-            GameController controller = new GameController(frame, frame.getGamePanel());
-            frame.setGameController(controller);
-        });
-    }
-
-    /**
-     * Shows a Swing dialog for choosing a card colour, replacing the old
-     * console-based Scanner input used by wild / +4 cards.
-     */
     public static int scegliColore() {
-        String[] colori = {"Rosso", "Verde", "Blu", "Giallo"};
-        String scelta = (String) JOptionPane.showInputDialog(
+        String[] opzioni = {"Rosso", "Giallo", "Verde", "Blu"};
+        
+        int scelta = JOptionPane.showOptionDialog(
                 null,
-                "Scegli il colore:",
-                "Colore Jolly",
+                "Hai giocato un Jolly! Scegli il nuovo colore:",
+                "Cambio Colore",
+                JOptionPane.DEFAULT_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                colori,
-                colori[0]
+                opzioni,
+                opzioni[0]
         );
-        if (scelta != null) {
-            switch (scelta) {
-                case "Rosso":  return 0;
-                case "Verde":  return 1;
-                case "Blu":    return 2;
-                case "Giallo": return 3;
-            }
-        }
-        return 0; // default
+
+        // Se l'utente chiude la finestra con la 'X', forziamo il Rosso (0) di default
+        return (scelta >= 0) ? scelta : 0; 
     }
 }

@@ -28,13 +28,18 @@ public class Carta implements Serializable{
     }
     
     // METODO toString()
+    @Override
     public String toString() {
-        String[] colori = {"Rosso", "Verde", "Blu", "Giallo", "Jolly"};
-        String[] tipi = {"Normale", "+2", "Inverti", "Salta", "Jolly", "+4"};
-        
-        if (tipo != 0) {
-            return tipi[tipo] + " (" + colori[colore] + ")";
-        }
-        return "" + numero + " (" + colori[colore] + ")";
+        String[] nomiColori = {"Rosso", "Giallo", "Verde", "Blu", "Jolly"};
+        String nomeColore = (colore >= 0 && colore < nomiColori.length) ? nomiColori[colore] : "";
+
+        if (tipo == 0) return nomeColore + " " + numero;
+        if (tipo == 1) return nomeColore + " +2";
+        if (tipo == 2) return nomeColore + " Inverti";
+        if (tipo == 3) return nomeColore + " Salta";
+        if (tipo == 4) return "Cambio Colore";
+        if (tipo == 5) return "+4";
+
+        return "Carta (" + colore + ", " + tipo + ")";
     }
 }

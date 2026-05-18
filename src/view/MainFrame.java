@@ -1,6 +1,6 @@
 package view;
 
-import controller.GameController;
+import controller.GameController; // Assicurati che ci sia questo import
 import javax.swing.*;
 import java.awt.*;
 
@@ -8,12 +8,10 @@ public class MainFrame extends JFrame {
     private CardLayout cardLayout;
     private JPanel mainPanel;
 
-    // Pannelli specifici
     private MenuPanel menuPanel;
     private ConfigPanel configPanel;
     private GamePanel gamePanel;
-
-    private GameController gameController; // set by App after construction
+    private GameController gameController; // Questo deve essere presente
 
     public MainFrame() {
         super("UNO - Progetto MDP");
@@ -24,12 +22,17 @@ public class MainFrame extends JFrame {
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // Inizializza le schermate
+        // 1. Inizializza prima le schermate grafiche
         menuPanel = new MenuPanel(this);
         configPanel = new ConfigPanel(this);
         gamePanel = new GamePanel(this);
 
-        // Aggiungi le schermate al CardLayout con un nome univoco
+        // 2. PEZZO MANCANTE FONDAMENTALE: Crea il controller e passalo ai pannelli
+        gameController = new GameController(this, gamePanel);
+        configPanel.setController(gameController); // Ora il controller nel ConfigPanel NON è più null!
+        gamePanel.setController(gameController);   // Lo passiamo anche al tavolo da gioco
+
+        // 3. Aggiungi i pannelli al contenitore principale
         mainPanel.add(menuPanel, "MENU");
         mainPanel.add(configPanel, "CONFIG");
         mainPanel.add(gamePanel, "GAME");
@@ -38,26 +41,16 @@ public class MainFrame extends JFrame {
         setVisible(true);
     }
 
-    /** Metodo per cambiare schermata */
     public void showPanel(String panelName) {
         cardLayout.show(mainPanel, panelName);
     }
 
-    public GamePanel getGamePanel() {
-        return gamePanel;
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new MainFrame());
     }
-
-    /** Called by App to inject the GameController into all panels that need it. */
-    public void setGameController(GameController controller) {
-        this.gameController = controller;
-        configPanel.setController(controller);
-        gamePanel.setController(controller);
-    }
-
     public GameController getGameController() {
         return gameController;
     }
-
     /** Imposta la modalità simulazione per il pannello di configurazione. */
     public void setSimulationMode(boolean mode) {
         configPanel.setModalitaSimulazione(mode);

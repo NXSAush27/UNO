@@ -61,15 +61,7 @@ public class Partita implements Serializable {
     }
 
     public boolean isMossaValida(Carta carta) {
-        return cartaInGioco == null
-            // wild / +4 always playable
-            || carta.getTipo() >= 4
-            // match colour
-            || carta.getColore() == cartaInGioco.getColore()
-            // same face value on number cards, OR same action type on action cards
-            || (carta.getTipo() == 0
-                ? carta.getNumero() == cartaInGioco.getNumero()
-                : carta.getTipo() == cartaInGioco.getTipo());
+        return verificaMossaValida(carta);
     }
 
     public void giocaCarta(Giocatore giocatore, Carta carta) {
@@ -87,7 +79,7 @@ public class Partita implements Serializable {
                     return;
                 }
             }
-            System.err.println("Carta non trovata nella mano: " + carta);
+            System.err.println("Carta non trovata nella mano: " + carta + " - Mano: " + list);
         }
     }
 
@@ -96,23 +88,28 @@ public class Partita implements Serializable {
      * they are skipped and the flag is consumed immediately.
      */
     public void passaTurno() {
-        int nextIdx;
-        if (direzioneGioco) {
-            nextIdx = (turno + 1) % giocatori.length;
-        } else {
-            nextIdx = (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
-        }
-        Giocatore next = giocatori[nextIdx];
-        if (next.isHaSaltato()) {
-            next.setHaSaltato(false); // consume stun
-            // skip
+        boolean trovato = false;
+        int safeCounter = 0; // Evita loop infiniti assoluti
+        
+        while (!trovato && safeCounter < giocatori.length * 2) {
+            safeCounter++;
+            
+            // 1. Avanza fisicamente di una sedia
             if (direzioneGioco) {
-                turno = (nextIdx + 1) % giocatori.length;
+                turno = (turno + 1) % giocatori.length;
             } else {
-                turno = (nextIdx - 1 < 0) ? giocatori.length - 1 : nextIdx - 1;
+                turno = (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
             }
-        } else {
-            turno = nextIdx;
+            
+            // 2. Controlla se la persona su questa sedia è stordita (bloccata)
+            if (giocatori[turno].isHaSaltato()) {
+                // Se è bloccato, consumiamo il blocco...
+                giocatori[turno].setHaSaltato(false); 
+                // ...e il ciclo riparte, facendo un altro passo avanti!
+            } else {
+                // Trovato un giocatore libero
+                trovato = true; 
+            }
         }
     }
 
@@ -123,12 +120,15 @@ public class Partita implements Serializable {
 
     public void giocaCarta(Giocatore giocatore, int posizioneCarta) {
         Carta cartaGiocata = giocatore.getMano().getCarte().get(posizioneCarta);
+        System.out.println("DEBUG giocaCarta: carta=" + cartaGiocata + ", posizione=" + posizioneCarta);
+        System.out.println("DEBUG verificaMossaValida=" + verificaMossaValida(cartaGiocata) + ", cartaInGioco=" + cartaInGioco);
         if (verificaMossaValida(cartaGiocata)) {
             Mano mano = giocatore.getMano();
 
             giocatore.rimuoviCartaAPosizione(posizioneCarta);
             pilascarti.push(cartaInGioco);
             cartaInGioco = cartaGiocata;
+            System.out.println("DEBUG carta rimossa, carte in mano: " + mano.getCarte().size());
 
             // UNO / penalità
             if (mano.getCarte().size() == 1 && !giocatore.isDettoUno()) {
@@ -142,6 +142,8 @@ public class Partita implements Serializable {
             // Reset UNO flag AFTER the penalty check
             giocatore.setDettoUno(false);
             giocatore.provaDichiaraUno(this);
+        } else {
+            System.out.println("DEBUG Mossa NON valida!");
         }
     }
 
@@ -155,49 +157,43 @@ public class Partita implements Serializable {
     }
 
     public void applicaEffettoCarta(Giocatore giocatore, Carta carta) {
+        int bersaglio;
+        if (direzioneGioco) {
+            bersaglio = (turno + 1) % giocatori.length;
+        } else {
+            bersaglio = (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
+        }
+
         switch (carta.getTipo()) {
             case 1: // +2
-                if (direzioneGioco) {
-                    for (int i = 0; i < 2; i++) {
-                        pescaCarta(giocatori[(turno + 1) % giocatori.length]);
-                    }
-                } else {
-                    for (int i = 0; i < 2; i++) {
-                        pescaCarta(giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1]);
-                    }
+                for (int i = 0; i < 2; i++) {
+                    pescaCarta(giocatori[bersaglio]);
                 }
+                giocatori[bersaglio].setHaSaltato(true); // Stordisce
                 break;
             case 2: // Inverti
                 direzioneGioco = !direzioneGioco;
-                break;
-            case 3: // Salta — marca il prossimo giocatore come stunnato
-                if (direzioneGioco) {
-                    giocatori[(turno + 1) % giocatori.length].setHaSaltato(true);
-                } else {
-                    giocatori[turno - 1 < 0 ? giocatori.length - 1 : turno - 1].setHaSaltato(true);
+                // REGOLE UFFICIALI UNO: In 2 giocatori, l'Inverti vale come Blocco!
+                if (giocatori.length == 2) {
+                    giocatori[bersaglio].setHaSaltato(true);
                 }
+                break;
+            case 3: // Salta (Blocco)
+                giocatori[bersaglio].setHaSaltato(true); // Stordisce
                 break;
             case 4: // Jolly
                 pilascarti.pop();
                 int coloreJolly = giocatore.scegliColore(this);
-                Carta cartacoloreScelto = new Carta(0, coloreJolly, 4);
-                cartaInGioco = cartacoloreScelto;
+                cartaInGioco = new Carta(0, coloreJolly, 4);
                 break;
             case 5: // +4
-                int nextForDraw;
-                if (direzioneGioco) {
-                    nextForDraw = (turno + 1) % giocatori.length;
-                } else {
-                    nextForDraw = turno - 1 < 0 ? giocatori.length - 1 : turno - 1;
-                }
                 for (int i = 0; i < 4; i++) {
-                    pescaCarta(giocatori[nextForDraw]);
+                    pescaCarta(giocatori[bersaglio]);
                 }
-                giocatori[nextForDraw].setHaSaltato(true);
+                giocatori[bersaglio].setHaSaltato(true); // Stordisce
                 pilascarti.pop();
                 int colorePlus4 = giocatore.scegliColore(this);
-                Carta cartacoloreScelto4 = new Carta(0, colorePlus4, 5);
-                cartaInGioco = cartacoloreScelto4;
+                cartaInGioco = new Carta(0, colorePlus4, 5);
                 break;
         }
     }
@@ -208,6 +204,7 @@ public class Partita implements Serializable {
                 for (int i = 0; i < 2; i++) {
                     pescaCarta(giocatori[0]);
                 }
+                giocatori[0].setHaSaltato(true); // IL GIOCO ORA SALTA L'AVVERSARIO
                 break;
             case 2: // Inverti
                 direzioneGioco = !direzioneGioco;
@@ -272,7 +269,7 @@ public class Partita implements Serializable {
     public boolean verificaMossaValida(Carta cartaGiocata) {
         return cartaInGioco == null
             // wild / +4 always playable
-            || cartaGiocata.getTipo() == 4 || cartaGiocata.getTipo() == 5
+            || cartaGiocata.getTipo() >= 4
             // match colour
             || cartaGiocata.getColore() == cartaInGioco.getColore()
             // same face value on number cards, OR same action type on action cards
