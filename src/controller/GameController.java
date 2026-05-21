@@ -11,9 +11,11 @@ public class GameController {
     private MainFrame mainFrame;
     private boolean inTransizione = false;
 
-    // Variabili per il sistema "Dichiara UNO" e "Penalizza"
     private boolean unoDichiaratoInAnticipo = false;
     private Giocatore giocatoreVulnerabile = null;
+    
+    // --- FEATURE SIMULAZIONE VELOCE ---
+    private boolean modalitaSimulazione = false;
 
     public GameController(MainFrame frame, GamePanel panel) {
         this.mainFrame = frame;
@@ -24,8 +26,14 @@ public class GameController {
         partita = new Partita(giocatori, sogliaPunti);
         partita.distribuisciCarteIniziali();
 
+        // Riconoscimento automatico della modalità simulazione
+        modalitaSimulazione = true;
         for (Giocatore g : giocatori) {
-            if (g instanceof GiocatoreBot bot) bot.setGamePanel(gamePanel);
+            if (g instanceof GiocatoreBot bot) {
+                bot.setGamePanel(gamePanel);
+            } else if (g instanceof GiocatoreUmano) {
+                modalitaSimulazione = false; // Se c'è almeno un umano, NON è una simulazione pura
+            }
         }
 
         unoDichiaratoInAnticipo = false;
@@ -54,12 +62,9 @@ public class GameController {
 
                 int cartePrima = corrente.getMano().getCarte().size();
 
-                // --- FEATURE ILLUMINA MANO ---
-                // Se la carta è un Jolly (4) o un +4 (5), accendi tutta la mano prima di bloccare lo schermo!
                 if (cartaScelta.getTipo() == 4 || cartaScelta.getTipo() == 5) {
                     gamePanel.illuminaTutteLeCarte();
                 }
-                // -----------------------------
 
                 partita.giocaCarta(corrente, cartaScelta);
                 gamePanel.aggiungiLog(corrente.getNome() + " ha giocato: " + cartaScelta);
@@ -80,8 +85,6 @@ public class GameController {
                 partita.passaTurno();
                 Giocatore next = partita.getGiocatoreCorrente();
 
-                // Questo aggiornaTavolo finale resetterà automaticamente la mano, 
-                // re-ingrigendo le carte non giocabili in base al colore che hai appena scelto!
                 gamePanel.aggiornaTavolo(partita);
                 inTransizione = false; 
 
@@ -128,11 +131,9 @@ public class GameController {
                         "Colpo di Fortuna! ⚡",
                         JOptionPane.INFORMATION_MESSAGE);
                 
-                // --- FEATURE ILLUMINA MANO ---
                 if (pescata.getTipo() == 4 || pescata.getTipo() == 5) {
                     gamePanel.illuminaTutteLeCarte();
                 }
-                // -----------------------------
 
                 partita.giocaCarta(corrente, pescata);
                 gamePanel.aggiungiLog("⚡ " + corrente.getNome() + " ha pescato e giocato subito: " + pescata);
@@ -176,9 +177,8 @@ public class GameController {
 
         int carteInMano = corrente.getMano().getCarte().size();
 
-        // FIX FIX FIX: Modificata la gestione per rispecchiare la logica a 2 carte
         if (carteInMano == 2) {
-            corrente.setDettoUno(true); // Imposta direttamente il flag per Partita.java senza innescare la penalità
+            corrente.setDettoUno(true); 
             unoDichiaratoInAnticipo = true;
             gamePanel.aggiungiLog(corrente.getNome() + " ha pre-dichiarato UNO!");
         } else if (carteInMano == 1) {
@@ -188,7 +188,7 @@ public class GameController {
             }
             gamePanel.aggiungiLog(corrente.getNome() + " ha dichiarato UNO!");
         } else {
-            partita.SegnalaUno(corrente); // Penalità automatica se premuto con troppe carte
+            partita.SegnalaUno(corrente); 
             gamePanel.aggiungiLog(corrente.getNome() + " ha urlato UNO a vuoto ed è stato penalizzato.");
         }
         gamePanel.aggiornaTavolo(partita);
@@ -218,8 +218,13 @@ public class GameController {
             Partita caricata = Partita.caricaPartita("savegame.dat");
             if (caricata != null) {
                 this.partita = caricata;
+                modalitaSimulazione = true;
                 for (Giocatore g : partita.getGiocatori()) {
-                    if (g instanceof GiocatoreBot bot) bot.setGamePanel(gamePanel);
+                    if (g instanceof GiocatoreBot bot) {
+                        bot.setGamePanel(gamePanel);
+                    } else if (g instanceof GiocatoreUmano) {
+                        modalitaSimulazione = false;
+                    }
                 }
                 unoDichiaratoInAnticipo = false;
                 giocatoreVulnerabile = null;
@@ -241,7 +246,34 @@ public class GameController {
     }
 
     private void mostraVittoria(Giocatore vincitore) {
-        gamePanel.aggiungiLog("🎉 " + vincitore.getNome() + " ha vinto la partita!");
+        gamePanel.aggiungiLog("🎉 " + vincitore.getNome() + " ha vinto la mano!");
+        
+        if (partita != null) {
+            partita.aggiungiPunteggioPezzo(vincitore);
+            
+            if (partita.verificaVittoriaPunti(vincitore)) {
+                JOptionPane.showMessageDialog(gamePanel,
+                        vincitore.getNome() + " ha vinto la partita a punti!\nPunteggio: " + vincitore.getPunteggio(),
+                        "Partita Terminata",
+                        JOptionPane.INFORMATION_MESSAGE);
+                mainFrame.showPanel("MENU");
+                return;
+            }
+            
+            for (Giocatore g : partita.getGiocatori()) {
+                gamePanel.aggiungiLog(g.getNome() + ": " + g.getPunteggio() + " punti");
+            }
+            
+            partita.resetMano();
+            partita.distribuisciCarteIniziali();
+            partita.applicaEffettoCartaInizio(partita.getCartaInGioco());
+            
+            gamePanel.aggiornaTavolo(partita);
+            gamePanel.aggiungiLog("Nuova mano! Turno di: " + partita.getGiocatoreCorrente().getNome());
+            controllaTurnoBot();
+            return;
+        }
+        
         JOptionPane.showMessageDialog(gamePanel,
                 vincitore.getNome() + " ha vinto la partita!",
                 "Partita Terminata",
@@ -255,7 +287,12 @@ public class GameController {
         Giocatore corrente = partita.getGiocatoreCorrente();
 
         if (corrente instanceof GiocatoreBot) {
-            javax.swing.Timer timer = new javax.swing.Timer(1500, e -> {
+            // --- IL TRUCCO DELLA VELOCITÀ ---
+            // Se è simulazione, ritardo quasi zero (10ms) per dare a Java il tempo di ricaricare lo schermo.
+            // Se c'è un umano, ritardo classico di 1.5 secondi per dare il tempo di ragionare.
+            int delay = modalitaSimulazione ? 10 : 1500;
+            
+            javax.swing.Timer timer = new javax.swing.Timer(delay, e -> {
                 try {
                     if (giocatoreVulnerabile != null && giocatoreVulnerabile != corrente) {
                         giocatoreVulnerabile = null;
@@ -295,7 +332,7 @@ public class GameController {
                     
                     if (corrente == next) {
                         gamePanel.aggiungiLog("🔄 " + corrente.getNome() + " (BOT) gioca di nuovo!");
-                        controllaTurnoBot();
+                        SwingUtilities.invokeLater(() -> controllaTurnoBot());
                     } else if (next instanceof GiocatoreBot) {
                         controllaTurnoBot();
                     }

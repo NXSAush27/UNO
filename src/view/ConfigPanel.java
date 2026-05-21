@@ -2,10 +2,13 @@ package view;
 
 import controller.GameController;
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import model.Giocatore;
 import model.GiocatoreUmano;
 import model.GiocatoreBot;
@@ -33,23 +36,27 @@ public class ConfigPanel extends JPanel {
 
         // --- Panel principale con GridBagLayout ---
         JPanel mainGrid = new JPanel(new GridBagLayout());
+        mainGrid.setOpaque(false); 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(12, 12, 12, 12);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridx = 0;
         gbc.gridy = 0;
 
         // Titolo
-        JLabel titolo = new JLabel("Configurazione Partita");
-        titolo.setFont(new Font("SansSerif", Font.BOLD, 16));
+        JLabel titolo = new JLabel("CONFIGURAZIONE PARTITA", SwingConstants.CENTER);
+        titolo.setFont(new Font("SansSerif", Font.BOLD, 26));
+        titolo.setForeground(Color.WHITE); 
         mainGrid.add(titolo, gbc);
         gbc.gridy++;
 
         // --- Sezione Impostazioni Partita ---
         JPanel panelImpostazioni = new JPanel(new GridBagLayout());
-        panelImpostazioni.setBorder(BorderFactory.createTitledBorder("Impostazioni Partita"));
+        panelImpostazioni.setOpaque(false); 
+        panelImpostazioni.setBorder(createStyledTitledBorder("Impostazioni Partita"));
+        
         GridBagConstraints gbcImp = new GridBagConstraints();
-        gbcImp.insets = new Insets(3, 3, 3, 3);
+        gbcImp.insets = new Insets(6, 6, 6, 6);
         gbcImp.fill = GridBagConstraints.HORIZONTAL;
         gbcImp.gridx = 0;
         gbcImp.gridy = 0;
@@ -57,8 +64,11 @@ public class ConfigPanel extends JPanel {
         // Modalità
         gbcImp.gridy++;
         gbcImp.anchor = GridBagConstraints.WEST;
-        panelImpostazioni.add(new JLabel("Modalità:"), gbcImp);
+        panelImpostazioni.add(createStyledLabel("Modalità:"), gbcImp);
+        
         comboModalita = new JComboBox<>(new String[]{"Partita Singola", "Partita a Punti"});
+        styleComboBox(comboModalita); // APPLICA LO STILE AL MENU A TENDINA
+        
         gbcImp.gridx++;
         gbcImp.fill = GridBagConstraints.HORIZONTAL;
         gbcImp.weightx = 1.0;
@@ -69,9 +79,11 @@ public class ConfigPanel extends JPanel {
 
         // Soglia punti
         gbcImp.gridy++;
-        panelImpostazioni.add(new JLabel("Soglia punti:"), gbcImp);
+        panelImpostazioni.add(createStyledLabel("Soglia punti:"), gbcImp);
         SpinnerNumberModel sogliaModel = new SpinnerNumberModel(500, 100, 9999, 50);
         spinnerSogliaPunti = new JSpinner(sogliaModel);
+        styleSpinner(spinnerSogliaPunti); // APPLICA LO STILE AL SELETTORE
+        
         gbcImp.gridx++;
         gbcImp.fill = GridBagConstraints.HORIZONTAL;
         gbcImp.weightx = 1.0;
@@ -83,9 +95,12 @@ public class ConfigPanel extends JPanel {
         // Regole alternative
         gbcImp.gridy++;
         checkStacking = new JCheckBox("Attiva Stacking (+2 su +2)");
+        styleCheckBox(checkStacking);
         panelImpostazioni.add(checkStacking, gbcImp);
+        
         gbcImp.gridy++;
         checkNumberRush = new JCheckBox("Attiva Number Rush");
+        styleCheckBox(checkNumberRush);
         panelImpostazioni.add(checkNumberRush, gbcImp);
 
         gbc.gridy++;
@@ -93,14 +108,17 @@ public class ConfigPanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.weighty = 0.5;
         mainGrid.add(panelImpostazioni, gbc);
+        gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.weighty = 0;
 
         // --- Sezione Giocatori ---
         panelGiocatori = new JPanel(new GridBagLayout());
-        panelGiocatori.setBorder(BorderFactory.createTitledBorder("Giocatori"));
+        panelGiocatori.setOpaque(false); 
+        panelGiocatori.setBorder(createStyledTitledBorder("Giocatori"));
+        
         GridBagConstraints gbcGioc = new GridBagConstraints();
-        gbcGioc.insets = new Insets(3, 3, 3, 3);
+        gbcGioc.insets = new Insets(6, 6, 6, 6);
         gbcGioc.fill = GridBagConstraints.HORIZONTAL;
         gbcGioc.gridx = 0;
         gbcGioc.gridy = 0;
@@ -108,9 +126,11 @@ public class ConfigPanel extends JPanel {
         // Totale giocatori
         gbcGioc.gridy++;
         gbcGioc.anchor = GridBagConstraints.WEST;
-        panelGiocatori.add(new JLabel("Numero giocatori (2-6):"), gbcGioc);
+        panelGiocatori.add(createStyledLabel("Numero giocatori (2-6):"), gbcGioc);
         SpinnerNumberModel numModel = new SpinnerNumberModel(2, 2, 6, 1);
         spinnerGiocatori = new JSpinner(numModel);
+        styleSpinner(spinnerGiocatori); // APPLICA LO STILE
+        
         gbcGioc.gridx++;
         gbcGioc.fill = GridBagConstraints.HORIZONTAL;
         gbcGioc.weightx = 1.0;
@@ -122,11 +142,12 @@ public class ConfigPanel extends JPanel {
         // Giocatori umani
         gbcGioc.gridy++;
         gbcGioc.anchor = GridBagConstraints.WEST;
-        labelUmani = new JLabel("Giocatori umani (0-6):");
+        labelUmani = createStyledLabel("Giocatori umani (0-6):");
         panelGiocatori.add(labelUmani, gbcGioc);
         SpinnerNumberModel umaniModel = new SpinnerNumberModel(1, 0, 6, 1);
         spinnerUmani = new JSpinner(umaniModel);
-        // ChangeListener to cap at total players
+        styleSpinner(spinnerUmani); // APPLICA LO STILE
+        
         spinnerUmani.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
@@ -137,6 +158,7 @@ public class ConfigPanel extends JPanel {
                 }
             }
         });
+        
         gbcGioc.gridx++;
         gbcGioc.fill = GridBagConstraints.HORIZONTAL;
         gbcGioc.weightx = 1.0;
@@ -147,21 +169,25 @@ public class ConfigPanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.weighty = 0.5;
         mainGrid.add(panelGiocatori, gbc);
+        gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.weighty = 0;
 
-        // --- Pulsanti ---
+        // --- Pulsanti Customizzati ---
         gbc.gridy++;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
+        
         JPanel panelBottoni = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        panelBottoni.setOpaque(false); 
+        
         JButton btnStart = new JButton("Avvia Partita");
+        styleButton(btnStart, new Color(40, 140, 60), new Color(60, 180, 80)); 
         btnStart.addActionListener((ActionEvent e) -> {
             int numGiocatori = (Integer) spinnerGiocatori.getValue();
             int sogliaPunti = (Integer) spinnerSogliaPunti.getValue();
             Giocatore[] giocatori = new Giocatore[numGiocatori];
             if (modalitaSimulazione) {
-                // Tutti bot
                 for (int i = 0; i < numGiocatori; i++) {
                     giocatori[i] = new GiocatoreBot("Bot " + i);
                 }
@@ -177,8 +203,11 @@ public class ConfigPanel extends JPanel {
                 controller.avviaNuovaPartita(giocatori, sogliaPunti);
             }
         });
+        
         JButton btnBack = new JButton("Indietro");
+        styleButton(btnBack, new Color(50, 50, 50), new Color(80, 80, 80)); 
         btnBack.addActionListener(e -> mainFrame.showPanel("MENU"));
+        
         panelBottoni.add(btnStart);
         panelBottoni.add(btnBack);
         mainGrid.add(panelBottoni, gbc);
@@ -186,35 +215,135 @@ public class ConfigPanel extends JPanel {
         add(mainGrid, BorderLayout.CENTER);
     }
 
-    /** Called by MainFrame to inject the GameController. */
     public void setController(GameController controller) {
         this.controller = controller;
     }
 
-    /** Called by MainFrame to switch between normal game and bot simulation. */
     public void setModalitaSimulazione(boolean simulazione) {
         this.modalitaSimulazione = simulazione;
         if (simulazione) {
             labelUmani.setVisible(false);
             spinnerUmani.setVisible(false);
-            panelGiocatori.setBorder(BorderFactory.createTitledBorder("Configurazione Simulazione"));
+            panelGiocatori.setBorder(createStyledTitledBorder("Configurazione Simulazione"));
         } else {
             labelUmani.setVisible(true);
             spinnerUmani.setVisible(true);
-            panelGiocatori.setBorder(BorderFactory.createTitledBorder("Giocatori"));
+            panelGiocatori.setBorder(createStyledTitledBorder("Giocatori"));
         }
         revalidate();
         repaint();
     }
+    
+    // --- METODI DI STYLING UI ---
+
+    private JLabel createStyledLabel(String testo) {
+        JLabel lbl = new JLabel(testo);
+        lbl.setForeground(Color.WHITE);
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 15));
+        return lbl;
+    }
+    
+    private void styleCheckBox(JCheckBox chk) {
+        chk.setOpaque(false);
+        chk.setForeground(Color.WHITE);
+        chk.setFont(new Font("SansSerif", Font.BOLD, 15));
+        chk.setFocusPainted(false);
+    }
+    
+    private TitledBorder createStyledTitledBorder(String titolo) {
+        return BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 2, true), 
+            titolo,
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("SansSerif", Font.BOLD, 16),
+            Color.WHITE
+        );
+    }
+
+    // NUOVO METODO: Trasforma il JComboBox in un componente dark elegante
+    private void styleComboBox(JComboBox<String> combo) {
+        combo.setFont(new Font("SansSerif", Font.BOLD, 14));
+        combo.setBackground(new Color(45, 45, 45));
+        combo.setForeground(Color.WHITE);
+        
+        // Crea un bordo composto per distanziare il testo
+        combo.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 2),
+            BorderFactory.createEmptyBorder(4, 6, 4, 6)
+        ));
+
+        // RENDERER PERSONALIZZATO: Cambia l'aspetto delle righe quando apri il menu
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                label.setFont(new Font("SansSerif", Font.BOLD, 14));
+                label.setOpaque(true);
+                
+                // Fondo scuro per la lista a comparsa
+                list.setBackground(new Color(35, 35, 35));
+                
+                if (isSelected) {
+                    label.setBackground(new Color(180, 25, 35)); // Evidenziazione bordeaux in linea col tema
+                    label.setForeground(Color.WHITE);
+                } else {
+                    label.setBackground(new Color(45, 45, 45));
+                    label.setForeground(Color.LIGHT_GRAY);
+                }
+                
+                label.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+                return label;
+            }
+        });
+    }
+
+    // NUOVO METODO: Scurisce ed uniforma i selettori numerici (JSpinner)
+    private void styleSpinner(JSpinner spinner) {
+        spinner.setFont(new Font("SansSerif", Font.BOLD, 14));
+        spinner.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
+        
+        // Stilizza l'editor di testo dentro lo spinner
+        JComponent editor = spinner.getEditor();
+        if (editor instanceof JSpinner.DefaultEditor) {
+            JFormattedTextField textField = ((JSpinner.DefaultEditor) editor).getTextField();
+            textField.setBackground(new Color(45, 45, 45));
+            textField.setForeground(Color.WHITE);
+            textField.setCaretColor(Color.WHITE);
+            textField.setFont(new Font("SansSerif", Font.BOLD, 14));
+            textField.setHorizontalAlignment(JTextField.CENTER);
+        }
+    }
+    
+    private void styleButton(JButton btn, Color bgColor, Color hoverColor) {
+        btn.setFont(new Font("SansSerif", Font.BOLD, 18));
+        btn.setBackground(bgColor);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        btn.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 2),
+            BorderFactory.createEmptyBorder(10, 25, 10, 25)
+        ));
+        
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(hoverColor);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(bgColor);
+            }
+        });
+    }
+
     // --- FEATURE: Sfondo Sfumato Radiale (Bianco Rossastro -> Rosso Bordeaux) ---
     @Override
     protected void paintComponent(Graphics g) {
-        // Disegna i componenti di base
         super.paintComponent(g);
-        
         Graphics2D g2d = (Graphics2D) g.create();
-        
-        // Attiva l'anti-aliasing per rendere la transizione fluida
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         
         int width = getWidth();
@@ -223,17 +352,12 @@ public class ConfigPanel extends JPanel {
         float centerX = width / 2f;
         float centerY = height / 2f;
         
-        // Manteniamo il raggio ampio per non fare un cerchio netto
         float radius = Math.max(width, height);
         if (radius <= 0) radius = 1; 
         
-        // 1. I TUOI NUOVI COLORI: Un bianco rossastro al centro, bordeaux scuro ai lati
-        Color biancoRossastro = new Color(255, 85, 80); 
+Color biancoRossastro = new Color(255, 85, 80); 
         Color rossoBordeaux = new Color(255, 35, 35);
         
-        // 2. LA MAGIA DELLA COMPRESSIONE: 
-        // Impostando 0.5f (o 0.6f), il gradiente finisce molto prima.
-        // Risultato: il bordeaux domina molto di più i bordi dello schermo.
         float[] posizioni = {0.0f, 0.5f}; 
         Color[] colori = {biancoRossastro, rossoBordeaux};
         
@@ -241,7 +365,6 @@ public class ConfigPanel extends JPanel {
         
         g2d.setPaint(gradient);
         g2d.fillRect(0, 0, width, height);
-        
         g2d.dispose();
     }
 }

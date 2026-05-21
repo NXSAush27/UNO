@@ -8,6 +8,8 @@ public abstract class Giocatore implements Serializable {
     private boolean DettoUno;
     private boolean haGiocato = false;
     private boolean haSaltato = false;
+    private int punteggio = 0;
+    
     public Giocatore() {
         this.mano = new Mano();
         this.DettoUno = false;
@@ -50,6 +52,15 @@ public abstract class Giocatore implements Serializable {
     }
     public boolean getHaSaltato() {
         return haSaltato;
+    }
+    public int getPunteggio() {
+        return punteggio;
+    }
+    public void setPunteggio(int punteggio) {
+        this.punteggio = punteggio;
+    }
+    public void aggiungiPunteggio(int punti) {
+        this.punteggio += punti;
     }
     public abstract Carta decidiMossa(Partita partita);
     public abstract int scegliColore(Partita partita);

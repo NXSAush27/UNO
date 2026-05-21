@@ -147,70 +147,57 @@ public class Partita implements Serializable {
         }
     }
 
-    public void pescaCarta(Giocatore giocatore) {
-        // SISTEMA DI RICARICA MAZZO AUTOMATICA
+   public void pescaCarta(Giocatore giocatore) {
+        // Se il mazzo è vuoto, ricarichiamo dagli scarti
         if (mazzo.getCarte().isEmpty()) {
             if (pilascarti.isEmpty()) {
-                System.out.println("Mazzo e scarti vuoti! Nessuna carta disponibile.");
-                return; // Evita crash nei rarissimi casi in cui tutte le 108 carte sono in mano
+                System.out.println("⚠️ Attenzione: Nessuna carta disponibile negli scarti per rimescolare.");
+                return;
             }
             
-            // Travasa tutti gli scarti nel mazzo vuoto
+            // Travasa tutti gli scarti nel mazzo, TRANNE la carta attualmente in gioco
             mazzo.getCarte().addAll(pilascarti);
-            pilascarti.clear(); // Svuota gli scarti (cartaInGioco rimane intatta sul tavolo)
+            pilascarti.clear(); 
             
-            // Rimescola il nuovo mazzo
             java.util.Collections.shuffle(mazzo.getCarte());
-            System.out.println("🔄 IL MAZZO È FINITO: Gli scarti sono stati rimescolati per formare un nuovo mazzo!");
+            System.out.println("🔄 Il mazzo è stato ricaricato dagli scarti.");
         }
 
         // Procedura standard di pescaggio
         if (!mazzo.getCarte().isEmpty()) {
             Carta cartaPescata = mazzo.getCarte().get(0);
             giocatore.aggiungiCarta(cartaPescata);
-            System.out.println(giocatore.getNome() + " ha pescato: " + cartaPescata.toString());
             mazzo.getCarte().remove(0);
         }
     }
 
     public void applicaEffettoCarta(Giocatore giocatore, Carta carta) {
-        int bersaglio;
-        if (direzioneGioco) {
-            bersaglio = (turno + 1) % giocatori.length;
-        } else {
-            bersaglio = (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
-        }
+        int bersaglio = direzioneGioco ? (turno + 1) % giocatori.length : (turno - 1 < 0) ? giocatori.length - 1 : turno - 1;
 
         switch (carta.getTipo()) {
             case 1: // +2
-                for (int i = 0; i < 2; i++) {
-                    pescaCarta(giocatori[bersaglio]);
-                }
-                giocatori[bersaglio].setHaSaltato(true); // Stordisce
+                for (int i = 0; i < 2; i++) pescaCarta(giocatori[bersaglio]);
+                giocatori[bersaglio].setHaSaltato(true);
                 break;
             case 2: // Inverti
                 direzioneGioco = !direzioneGioco;
-                // REGOLE UFFICIALI UNO: In 2 giocatori, l'Inverti vale come Blocco!
-                if (giocatori.length == 2) {
-                    giocatori[bersaglio].setHaSaltato(true);
-                }
+                if (giocatori.length == 2) giocatori[bersaglio].setHaSaltato(true);
                 break;
-            case 3: // Salta (Blocco)
-                giocatori[bersaglio].setHaSaltato(true); // Stordisce
+            case 3: // Salta
+                giocatori[bersaglio].setHaSaltato(true);
                 break;
             case 4: // Jolly
-                pilascarti.pop();
+                // Non facciamo più pilascarti.pop()!
+                // La carta Jolly originale è già stata spinta in pilascarti da giocaCarta()
                 int coloreJolly = giocatore.scegliColore(this);
-                cartaInGioco = new Carta(0, coloreJolly, 4);
+                cartaInGioco = new Carta(0, coloreJolly, 4); // La carta in gioco ora ha il colore scelto
                 break;
             case 5: // +4
-                for (int i = 0; i < 4; i++) {
-                    pescaCarta(giocatori[bersaglio]);
-                }
-                giocatori[bersaglio].setHaSaltato(true); // Stordisce
-                pilascarti.pop();
+                for (int i = 0; i < 4; i++) pescaCarta(giocatori[bersaglio]);
+                giocatori[bersaglio].setHaSaltato(true);
+                // Non facciamo più pilascarti.pop()!
                 int colorePlus4 = giocatore.scegliColore(this);
-                cartaInGioco = new Carta(0, colorePlus4, 5);
+                cartaInGioco = new Carta(0, colorePlus4, 5); // La carta in gioco ora ha il colore scelto
                 break;
         }
     }
@@ -249,6 +236,50 @@ public class Partita implements Serializable {
     public boolean verificaVittoria(Giocatore giocatore) {
         return giocatore.getMano().getCarte().isEmpty();
     }
+    
+    public boolean verificaVittoriaPunti(Giocatore giocatore) {
+        return giocatore.getPunteggio() >= sogliaPunti;
+    }
+    
+    public int calcolaPunteggioMano(Giocatore giocatore) {
+        int totale = 0;
+        for (Carta carta : giocatore.getMano().getCarte()) {
+            int tipo = carta.getTipo();
+            if (tipo == 1) totale += 20;
+            else if (tipo == 2 || tipo == 3) totale += 20;
+            else if (tipo == 4 || tipo == 5) totale += 50;
+            else totale += carta.getNumero();
+        }
+        return totale;
+    }
+    
+    public void aggiungiPunteggioVittoria(Giocatore vincitore) {
+        vincitore.aggiungiPunteggio(50);
+    }
+    
+    public void aggiungiPunteggioPezzo(Giocatore vincitore) {
+        int punteggioMani = 0;
+        for (Giocatore g : giocatori) {
+            if (g != vincitore) {
+                punteggioMani += calcolaPunteggioMano(g);
+            }
+        }
+        vincitore.aggiungiPunteggio(50 + punteggioMani);
+    }
+    
+    public void resetMano() {
+        for (Giocatore giocatore : giocatori) {
+            giocatore.getMano().getCarte().clear();
+        }
+        mazzo = new Mazzo(108);
+        pilascarti.clear();
+        cartaInGioco = null;
+        direzioneGioco = true;
+        turno = 0;
+        for (int i = 0; i < Math.random() * 100; i++) {
+            this.mazzo.mescola();
+        }
+    }
 
     public void salvaPartita(String filePath) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(filePath);
@@ -280,7 +311,13 @@ public class Partita implements Serializable {
     }
 
     public void terminaPartita(Giocatore giocatore) {
-        System.out.println("Il giocatore:" + giocatore.getNome() + " ha vinto!!");
+        System.out.println("Il giocatore:" + giocatore.getNome() + " ha vinto la mano!!");
+        aggiungiPunteggioPezzo(giocatore);
+        System.out.println("Punteggio di " + giocatore.getNome() + ": " + giocatore.getPunteggio());
+        
+        if (verificaVittoriaPunti(giocatore)) {
+            System.out.println("Il giocatore:" + giocatore.getNome() + " ha vinto la partita a punti!!");
+        }
     }
 
     public boolean verificaMossaValida(Carta cartaGiocata) {
