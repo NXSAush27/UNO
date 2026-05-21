@@ -11,7 +11,6 @@ public class MenuPanel extends JPanel {
         this.mainFrame = frame;
         
         // Sfondo (puoi personalizzarlo con un'immagine)
-        setBackground(new Color(200, 0, 0)); // Rosso UNO
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -65,5 +64,43 @@ public class MenuPanel extends JPanel {
         b.setFont(new Font("Arial", Font.PLAIN, 18));
         b.setFocusPainted(false);
         return b;
+    }
+    // --- FEATURE: Sfondo Sfumato Radiale (Bianco Rossastro -> Rosso Bordeaux) ---
+    @Override
+    protected void paintComponent(Graphics g) {
+        // Disegna i componenti di base
+        super.paintComponent(g);
+        
+        Graphics2D g2d = (Graphics2D) g.create();
+        
+        // Attiva l'anti-aliasing per rendere la transizione fluida
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        
+        int width = getWidth();
+        int height = getHeight();
+        
+        float centerX = width / 2f;
+        float centerY = height / 2f;
+        
+        // Manteniamo il raggio ampio per non fare un cerchio netto
+        float radius = Math.max(width, height);
+        if (radius <= 0) radius = 1; 
+        
+        // 1. I TUOI NUOVI COLORI: Un bianco rossastro al centro, bordeaux scuro ai lati
+        Color biancoRossastro = new Color(255, 85, 80); 
+        Color rossoBordeaux = new Color(255, 35, 35);
+        
+        // 2. LA MAGIA DELLA COMPRESSIONE: 
+        // Impostando 0.5f (o 0.6f), il gradiente finisce molto prima.
+        // Risultato: il bordeaux domina molto di più i bordi dello schermo.
+        float[] posizioni = {0.0f, 0.5f}; 
+        Color[] colori = {biancoRossastro, rossoBordeaux};
+        
+        RadialGradientPaint gradient = new RadialGradientPaint(centerX, centerY, radius, posizioni, colori);
+        
+        g2d.setPaint(gradient);
+        g2d.fillRect(0, 0, width, height);
+        
+        g2d.dispose();
     }
 }
