@@ -355,7 +355,7 @@ public class ConfigPanel extends JPanel {
         float radius = Math.max(width, height);
         if (radius <= 0) radius = 1; 
         
-Color biancoRossastro = new Color(255, 85, 80); 
+        Color biancoRossastro = new Color(255, 85, 80); 
         Color rossoBordeaux = new Color(255, 35, 35);
         
         float[] posizioni = {0.0f, 0.5f}; 

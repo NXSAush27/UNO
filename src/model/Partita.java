@@ -203,32 +203,32 @@ public class Partita implements Serializable {
     }
 
     public void applicaEffettoCartaInizio(Carta carta) {
+        int bersaglio = 0;
+
         switch (carta.getTipo()) {
-            case 1: // +2 — il giocatore 0 pesca due
-                for (int i = 0; i < 2; i++) {
-                    pescaCarta(giocatori[0]);
-                }
-                giocatori[0].setHaSaltato(true); // IL GIOCO ORA SALTA L'AVVERSARIO
+            case 1: // +2
+                for (int i = 0; i < 2; i++) pescaCarta(giocatori[bersaglio]);
+                giocatori[bersaglio].setHaSaltato(true);
                 break;
             case 2: // Inverti
                 direzioneGioco = !direzioneGioco;
+                if (giocatori.length == 2) giocatori[bersaglio].setHaSaltato(true);
                 break;
-            case 3: // Salta — giocatore 0 stunnato
-                giocatori[0].setHaSaltato(true);
+            case 3: // Salta
+                giocatori[bersaglio].setHaSaltato(true);
                 break;
             case 4: // Jolly
-                pilascarti.pop();
-                Carta cartacoloreScelto = new Carta(0, App.scegliColore(), 4);
-                cartaInGioco = cartacoloreScelto;
+                // Non facciamo più pilascarti.pop()!
+                // La carta Jolly originale è già stata spinta in pilascarti da giocaCarta()
+                int coloreJolly = giocatori[bersaglio].scegliColore(this);
+                cartaInGioco = new Carta(0, coloreJolly, 4); // La carta in gioco ora ha il colore scelto
                 break;
-            case 5: // +4 — giocatore 0 pesca 4 e viene stunnato
-                for (int i = 0; i < 4; i++) {
-                    pescaCarta(giocatori[0]);
-                }
-                giocatori[0].setHaSaltato(true);
-                pilascarti.pop();
-                Carta cartacoloreScelto4 = new Carta(0, App.scegliColore(), 5);
-                cartaInGioco = cartacoloreScelto4;
+            case 5: // +4
+                for (int i = 0; i < 4; i++) pescaCarta(giocatori[bersaglio]);
+                giocatori[bersaglio].setHaSaltato(true);
+                // Non facciamo più pilascarti.pop()!
+                int colorePlus4 = giocatori[bersaglio].scegliColore(this);
+                cartaInGioco = new Carta(0, colorePlus4, 5); // La carta in gioco ora ha il colore scelto
                 break;
         }
     }

@@ -104,11 +104,14 @@ public class GamePanel extends JPanel {
             dialogLog.setLocationRelativeTo(this);
             dialogLog.setVisible(true);
         });
+        JButton btnTornaMenu = new JButton("Torna al Menu");
+        btnTornaMenu.addActionListener(e -> mainFrame.showPanel("MENU"));
 
         bottoniDestra.add(btnUno);
         bottoniDestra.add(btnPenalizza); 
         bottoniDestra.add(btnSalva);
         bottoniDestra.add(btnMostraLog);
+        bottoniDestra.add(btnTornaMenu);
 
         pannelloDestro.add(bottoniDestra, BorderLayout.SOUTH);
         add(pannelloDestro, BorderLayout.EAST);
@@ -249,7 +252,7 @@ public class GamePanel extends JPanel {
         JPanel glassPane = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
-                g.setColor(new Color(0, 0, 0, 220));
+                g.setColor(new Color(0, 0, 0, 250));
                 g.fillRect(0, 0, getWidth(), getHeight());
                 super.paintComponent(g);
             }
